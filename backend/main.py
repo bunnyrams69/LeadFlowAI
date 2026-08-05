@@ -9,9 +9,19 @@ from routers import linkedin_scraper, insta_scraper, email_writer, post_automati
 
 app = FastAPI(title="LeadFlow AI")
 
+origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://leadflow-ai.vercel.app",
+    "https://*.vercel.app"
+]
+
+port = int(os.environ.get("PORT", 8000))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "*"],
+    allow_origins=origins,
+    allow_origin_regex="https://.*\\.vercel\\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
