@@ -181,8 +181,76 @@ export const scrapeInstagram = async (query, maxPosts = 10) => {
   }
 };
 export const getInstagramLeads = () => handleRequest(api.get('/api/instagram/leads'));
-export const writeEmail = (lead, productDesc, senderName) => handleRequest(api.post('/api/email/write', { lead, product_description: productDesc, sender_name: senderName }));
-export const writeBulkEmails = (leads, productDesc, senderName) => handleRequest(api.post('/api/email/write-bulk', leads.map(l => ({ lead: l, product_description: productDesc, sender_name: senderName }))));
+export const writeEmail = async (lead, productDesc, senderName) => {
+  const token = import.meta.env.VITE_OPENROUTER_KEY;
+  if (!token) {
+    return handleRequest(api.post('/api/email/write', { lead, product_description: productDesc, sender_name: senderName }));
+  }
+
+  try {
+    const prompt = `You are an expert B2B outbound sales copywriter.
+Write a highly personalized, short, and punchy cold email to this lead.
+
+LEAD INFO:
+Name: ${lead.name}
+Role: ${lead.title}
+Company: ${lead.company}
+Bio/Context: ${lead.bio || 'N/A'}
+
+MY PRODUCT/OFFER:
+${productDesc || 'We help companies scale efficiently.'}
+
+SENDER NAME:
+${senderName || 'Me'}
+
+RULES:
+1. Keep it under 100 words.
+2. No generic corporate jargon. Be conversational.
+3. Use the Lead's Bio/Context to write a highly personalized first sentence (icebreaker) that references them directly.
+4. Do not include placeholders like [Company Name], use the actual data.
+5. Return ONLY a valid JSON object with two keys: "subject" and "body". Do not include markdown formatting or backticks around the JSON.`;
+
+    const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+      model: 'meta-llama/llama-3-8b-instruct:free',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
+        'X-Title': 'LeadFlow AI'
+      }
+    });
+
+    let content = res.data.choices[0].message.content;
+    // Clean up potential markdown wrapper from free models
+    content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+    const json = JSON.parse(content);
+    
+    return { 
+      data: { subject: json.subject, body: json.body, lead_name: lead.name }, 
+      error: null 
+    };
+  } catch (err) {
+    console.error('OpenRouter Email Error:', err);
+    return handleRequest(api.post('/api/email/write', { lead, product_description: productDesc, sender_name: senderName }));
+  }
+};
+
+export const writeBulkEmails = async (leads, productDesc, senderName) => {
+  const token = import.meta.env.VITE_OPENROUTER_KEY;
+  if (!token) {
+    return handleRequest(api.post('/api/email/write-bulk', leads.map(l => ({ lead: l, product_description: productDesc, sender_name: senderName }))));
+  }
+  
+  const results = [];
+  for (const lead of leads) {
+     const res = await writeEmail(lead, productDesc, senderName);
+     if (res.data) results.push(res.data);
+  }
+  return { data: results, error: null };
+};
 export const publishPost = (content, scheduleTime = null) => handleRequest(api.post('/api/post/publish', { content, schedule_time: scheduleTime }));
 export const getPostHistory = () => handleRequest(api.get('/api/post/history'));
 export const sendChatMessage = (message, history = []) => handleRequest(api.post('/api/chat', { message, conversation_history: history }));

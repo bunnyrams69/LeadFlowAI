@@ -52,7 +52,10 @@ const EmailWriter = () => {
   const handleWrite = async () => {
     if(!leadName) { showToast('Select a lead', 'warning'); return; }
     setIsLoading(true);
-    const lead = { name: leadName, company: leadCompany, title: 'Professional', source: 'Manual', profile_url: '', scraped_at: '' };
+    let lead = { name: leadName, company: leadCompany, title: 'Professional', source: 'Manual', profile_url: '', scraped_at: '', bio: '' };
+    if (selectedLeadIndex >= 0) {
+      lead = savedLeads[selectedLeadIndex];
+    }
     const res = await writeEmail(lead, productDesc, senderName);
     setIsLoading(false);
     if (res.error) showToast(res.error, 'error');
