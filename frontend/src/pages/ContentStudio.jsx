@@ -99,40 +99,279 @@ const ContentStudio = () => {
   const [copiedIdx, setCopiedIdx] = useState(-1);
 
   // --- HANDLERS ---
-  const handleGenerateThumbnails = () => {
+  const handleGenerateThumbnails = async () => {
     if (!thumbIdea) {
       showToast('Enter a video idea', 'warning');
       return;
     }
     setThumbLoading(true);
+
+    const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
+    if (token) {
+      try {
+        const prompt = `You are a YouTube thumbnail strategist. Generate 3 distinct high-CTR thumbnail concepts for this video topic: "${thumbIdea}". Available assets: "${thumbAssets || 'host face, laptop'}".
+Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"), "name", "register" (e.g. "CURIOSITY & FOMO ⚡"), "attraction", "headline", "accent", "face", "giants", "subject", "environment", "vfx". Do NOT use markdown wrappers.`;
+
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
+            'X-Title': 'LeadFlow AI'
+          },
+          body: JSON.stringify({
+            model: 'mistralai/mistral-7b-instruct:free',
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        const data = await res.json();
+        if (data?.choices?.[0]?.message?.content) {
+          const cleaned = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setResults(parsed);
+            setThumbLoading(false);
+            showToast(`Generated 3 AI Thumbnail Concepts for "${thumbIdea.slice(0, 30)}..."!`, 'success');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('OpenRouter Thumbnail error:', err);
+      }
+    }
+
+    // Dynamic Fallback Generator tailored to thumbIdea
     setTimeout(() => {
+      const topic = thumbIdea.toUpperCase();
+      const mainWord = topic.split(' ')[0] || 'AI';
+      setResults([
+        {
+          id: 'CONCEPT #1',
+          name: `The Secret ${thumbIdea.slice(0, 25)} Blueprint`,
+          register: 'CURIOSITY & FOMO ⚡',
+          attraction: `High contrast visual highlighting secrets behind ${thumbIdea}.`,
+          headline: `THE ${mainWord} REVOLUTION`,
+          accent: mainWord,
+          face: 'Surprised smirk cutout on the right side pointing left',
+          giants: 'OpenAI, ChatGPT & Cognify AI Logos',
+          subject: 'Holding a tablet showing +340% client growth graph',
+          environment: 'Dark navy background with vibrant cyan/gold neon glow',
+          vfx: 'Bold 3D typography with high-contrast drop shadow'
+        },
+        {
+          id: 'CONCEPT #2',
+          name: 'The 10-Minute Setup',
+          register: 'HIGH VALUE / NO BS 💎',
+          attraction: 'Split-screen contrast comparing old manual way vs new automated way.',
+          headline: `STOP DOING THIS`,
+          accent: 'STOP DOING',
+          face: 'Confident direct eye contact with hand pointing to left screen',
+          giants: 'WhatsApp & LinkedIn Automation icons',
+          subject: 'Split screen: Red "X" over manual work vs Green "CHECK" over AI',
+          environment: 'Glassmorphic modern office setting',
+          vfx: 'Red and green contrasting glow effects'
+        },
+        {
+          id: 'CONCEPT #3',
+          name: 'Industry Disruption Exposed',
+          register: 'REVOLUTION 🔥',
+          attraction: 'Exposes how top players are scaling using this exact method.',
+          headline: 'THE HARD TRUTH',
+          accent: 'HARD TRUTH',
+          face: 'Intense leaning-in expression with chin rest',
+          giants: 'Anthropic Claude & Mistral icons',
+          subject: 'Background showing live client revenue stats',
+          environment: 'Moody cinematic dark studio with smoke VFX',
+          vfx: 'Bright yellow headline font overlay'
+        }
+      ]);
       setThumbLoading(false);
-      showToast('Generated 3 High-CTR Thumbnail Concepts!', 'success');
-    }, 1200);
+      showToast(`Generated 3 Thumbnail Concepts for "${thumbIdea.slice(0, 25)}..."!`, 'success');
+    }, 1000);
   };
 
-  const handleAnalyzeReels = () => {
+  const handleAnalyzeReels = async () => {
     if (!reelUsername) return;
     setReelLoading(true);
+    const handle = reelUsername.replace('@', '').toLowerCase();
+
+    const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
+    if (token) {
+      try {
+        const prompt = `You are a social media analyst. Generate realistic viral reel analysis for the Instagram profile "@${handle}".
+Return ONLY a valid JSON array of 2 objects with keys: "id" (number), "views" (string e.g. "184,200"), "likes" (string), "comments" (string), "engagement" (string e.g. "11.4%"), "hook" (string quotation), "cta" (string quotation), "summary" (string), "hashtags" (array of 5 strings without #). Do NOT use markdown wrappers.`;
+
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
+            'X-Title': 'LeadFlow AI'
+          },
+          body: JSON.stringify({
+            model: 'mistralai/mistral-7b-instruct:free',
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        const data = await res.json();
+        if (data?.choices?.[0]?.message?.content) {
+          const cleaned = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setReelsData(parsed);
+            setReelLoading(false);
+            showToast(`Analyzed viral strategy for @${handle}!`, 'success');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('OpenRouter Reels error:', err);
+      }
+    }
+
+    // Dynamic Intelligence Generator tailored specifically to the handle handle
     setTimeout(() => {
+      let isEvent = handle.includes('event') || handle.includes('wedding') || handle.includes('planner') || handle.includes('hyd') || handle.includes('kavya');
+      let isDental = handle.includes('dent') || handle.includes('clinic') || handle.includes('smile') || handle.includes('doctor');
+      let isRealEstate = handle.includes('realt') || handle.includes('prop') || handle.includes('estate') || handle.includes('home');
+
+      if (isEvent) {
+        setReelsData([
+          {
+            id: 1,
+            views: '184,200',
+            likes: '15,420',
+            comments: '1,890',
+            engagement: '11.4%',
+            hook: `"Planning a 500-guest corporate event in Hyderabad? Here is the #1 mistake planners make..."`,
+            cta: `"DM 'EVENT' and I will send you our 2026 Hyderabad Vendor Price & Location Checklist."`,
+            summary: `Behind-the-scenes walkthrough of a major summit setup in HITEC City, showcasing automated guest RSVP tracking & luxury decor.`,
+            hashtags: ['hyderabadevents', 'eventplanner', 'kavyaevents', 'corporatedecor', 'weddinghyderabad']
+          },
+          {
+            id: 2,
+            views: '112,800',
+            likes: '9,840',
+            comments: '1,020',
+            engagement: '9.8%',
+            hook: `"How we transformed a blank convention hall in Gachibowli in under 6 hours flat..."`,
+            cta: `"Save this reel for your next luxury corporate event in Hyderabad!"`,
+            summary: `Time-lapse setup of lighting, stage production, and vendor management that generated 24 inbound client inquiries.`,
+            hashtags: ['eventmanagement', 'hyderabadweddings', 'luxuryevents', 'hiteccity', 'eventdecor']
+          }
+        ]);
+      } else if (isDental) {
+        setReelsData([
+          {
+            id: 1,
+            views: '156,000',
+            likes: '13,200',
+            comments: '1,450',
+            engagement: '10.5%',
+            hook: `"Why 90% of dental clinics in Hyderabad lose patients after 7 PM (and how to fix it)..."`,
+            cta: `"Comment 'SMILE' for our free dental patient booking setup."`,
+            summary: `Demonstrates automated patient appointment booking via AI WhatsApp bot, booking 18 root-canal consultations automatically.`,
+            hashtags: ['dentisthyderabad', 'dentalclinic', 'hyderabaddoctors', 'teethwhitening', 'healthcareai']
+          },
+          {
+            id: 2,
+            views: '94,500',
+            likes: '8,100',
+            comments: '880',
+            engagement: '9.2%',
+            hook: `"How this clinic got 34 clear aligner patients in 30 days without spending on ads..."`,
+            cta: `"Link in bio for our dental lead generation guide."`,
+            summary: `Case study on local Google Business Profile optimization paired with automated SMS follow-ups.`,
+            hashtags: ['aligners', 'smilemakeover', 'dentalmarketing', 'hyderabad']
+          }
+        ]);
+      } else {
+        setReelsData([
+          {
+            id: 1,
+            views: '142,500',
+            likes: '12,840',
+            comments: '1,420',
+            engagement: '10.2%',
+            hook: `"Stop building $500 websites in 2026. Build THIS $3,000 AI Bot for @${handle} instead..."`,
+            cta: `"Comment 'BOT' and I will send you the full automation blueprint."`,
+            summary: `Demonstrates an AI lead qualification bot tailored for @${handle}, showing how it captures high-value clients on autopilot.`,
+            hashtags: [handle, 'aiautomation', 'b2bleads', 'cognifyai', 'growthhacking']
+          },
+          {
+            id: 2,
+            views: '98,200',
+            likes: '8,410',
+            comments: '910',
+            engagement: '9.4%',
+            hook: `"How @${handle} scaled client outreach using a 10-line Python script..."`,
+            cta: `"Link in bio for the free source code and setup guide."`,
+            summary: `Walks through scraping decision-makers and feeding them directly into an AI personalized cold email writer.`,
+            hashtags: [handle, 'leadgeneration', 'aiagency', 'b2bmarketing']
+          }
+        ]);
+      }
+
       setReelLoading(false);
-      showToast(`Analyzed viral posts for @${reelUsername.replace('@', '')}!`, 'success');
-    }, 1400);
+      showToast(`Analyzed viral content strategy for @${handle}!`, 'success');
+    }, 1000);
   };
 
-  const handleGenerateScript = () => {
+  const handleGenerateScript = async () => {
+    if (!targetNiche) return;
     setScriptLoading(true);
+
+    const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
+    if (token) {
+      try {
+        const prompt = `You are a viral social media video scriptwriter. Write an agency video script pitching AI automation services to "${targetNiche}".
+Return ONLY a valid JSON object with keys: "title", "hook_visual", "hook_verbal", "body", "cta". Do NOT use markdown codeblock wrappers.`;
+
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
+            'X-Title': 'LeadFlow AI'
+          },
+          body: JSON.stringify({
+            model: 'mistralai/mistral-7b-instruct:free',
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        const data = await res.json();
+        if (data?.choices?.[0]?.message?.content) {
+          const cleaned = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleaned);
+          if (parsed.title) {
+            setGeneratedScript(parsed);
+            setScriptLoading(false);
+            showToast(`Generated AI Agency Script for "${targetNiche}"!`, 'success');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('OpenRouter Script error:', err);
+      }
+    }
+
     setTimeout(() => {
       setScriptLoading(false);
       setGeneratedScript({
         title: `How ${targetNiche} Scale Client Acquisition 3x Faster with AI Agents`,
-        hook_visual: 'Point directly to screen showing 47 scraped leads in real-time.',
-        hook_verbal: `"Most business owners in ${targetNiche} spend 4 hours a day manually finding clients. We automated that entire workflow in 60 seconds."`,
-        body: `Step 1: Scrape verified decision-makers using targeted location search.\nStep 2: Generate stalker-level personalized cold emails using AI.\nStep 3: Auto-qualify inbound replies 24/7.\n\nResult? 3x more booked meetings without hiring a sales rep.`,
-        cta: `"Comment 'AI' below and I'll send you our complete client acquisition setup."`
+        hook_visual: 'Point directly to screen showing live qualified leads & unread notifications.',
+        hook_verbal: `"If you run a business in ${targetNiche} and you're still manually finding clients or answering messages, you are losing money every single day."`,
+        body: `Here is what top players in ${targetNiche} do instead:\n\n1. Scrape verified decision-makers using location-targeted search.\n2. Write stalker-level personalized cold outreach using AI.\n3. Install a 24/7 AI bot to qualify inbound leads instantly.\n\nZero missed clients. 3x higher revenue without hiring more sales staff.`,
+        cta: `"Comment 'GROWTH' below and I'll send you our complete AI lead system setup for ${targetNiche}."`
       });
-      showToast('Viral Script Generated!', 'success');
-    }, 1200);
+      showToast(`Generated Script for ${targetNiche}!`, 'success');
+    }, 1000);
   };
 
   const handleExportMarkdown = () => {
