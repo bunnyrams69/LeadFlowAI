@@ -43,7 +43,13 @@ const LeadsTable = ({ leads, loading }) => {
             <tr key={i}>
               <td style={{ fontWeight: 500 }}>{lead.name}</td>
               <td>
-                <span className={`tag tag-${lead.source.toLowerCase()}`}>{lead.source}</span>
+                {lead.profile_url ? (
+                  <a href={lead.profile_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }} title="View Profile">
+                    <span className={`tag tag-${lead.source.toLowerCase()}`} style={{ cursor: 'pointer' }}>{lead.source}</span>
+                  </a>
+                ) : (
+                  <span className={`tag tag-${lead.source.toLowerCase()}`}>{lead.source}</span>
+                )}
               </td>
               <td>{lead.company}</td>
               <td style={{ color: '#6B7280' }}>{lead.title}</td>
