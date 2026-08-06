@@ -21,7 +21,7 @@ export const scrapeLinkedIn = async (query, maxResults = 10) => {
   }
 
   try {
-    const actorId = 'harvestapi/linkedin-profile-search';
+    const actorId = 'harvestapi~linkedin-profile-search';
     
     const cookieValue = import.meta.env.VITE_LINKEDIN_COOKIE || '';
     
