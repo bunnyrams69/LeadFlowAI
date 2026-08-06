@@ -14,8 +14,8 @@ const EmailWriter = () => {
   const [selectedLeadIndex, setSelectedLeadIndex] = useState(-1);
   const [leadName, setLeadName] = useState('');
   const [leadCompany, setLeadCompany] = useState('');
-  const [productDesc, setProductDesc] = useState('');
-  const [senderName, setSenderName] = useState('');
+  const [productDesc, setProductDesc] = useState('Cognify AI is an intelligent B2B lead generation platform that automates prospecting and hyper-personalized outreach. We help businesses scale their client acquisition 3x faster using AI.');
+  const [senderName, setSenderName] = useState('Alex');
   const [result, setResult] = useState(null);
   
   const { incrementEmailsSent, isLoading, setIsLoading } = useContext(AppContext);
