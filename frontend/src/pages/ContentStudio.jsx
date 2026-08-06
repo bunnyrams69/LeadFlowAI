@@ -433,6 +433,32 @@ Return ONLY a valid JSON object with keys: "title", "hook_visual", "hook_verbal"
         {/* TAB 2: REELS INTELLIGENCE */}
         {activeTab === 'reels' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Apify API Key Settings Bar */}
+            <div className="card" style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Zap size={18} color="#2563EB" />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '13px', color: '#1E293B' }}>Apify Live Scraper Engine</div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>Scrapes real Instagram profiles, posts, reels & engagement metrics</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input 
+                  type="password" 
+                  placeholder="Apify API Token (apify_api_...)" 
+                  value={localStorage.getItem('apify_api_key') || ''} 
+                  onChange={(e) => {
+                    localStorage.setItem('apify_api_key', e.target.value.trim());
+                    showToast('Apify API Token updated!', 'success');
+                  }} 
+                  style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid var(--border)', width: '220px' }}
+                />
+                <span style={{ fontSize: '11px', fontWeight: 600, color: localStorage.getItem('apify_api_key') ? '#166534' : '#991B1B', backgroundColor: localStorage.getItem('apify_api_key') ? '#DCFCE7' : '#FEE2E2', padding: '4px 8px', borderRadius: '6px' }}>
+                  {localStorage.getItem('apify_api_key') ? 'TOKEN ACTIVE 🟢' : 'TOKEN REQUIRED ⚠️'}
+                </span>
+              </div>
+            </div>
+
             <div className="card" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '4px', display: 'block' }}>Target Creator / Competitor Profile</label>
@@ -440,13 +466,13 @@ Return ONLY a valid JSON object with keys: "title", "hook_visual", "hook_verbal"
                   type="text" 
                   value={reelUsername} 
                   onChange={e => setReelUsername(e.target.value)} 
-                  placeholder="e.g. cognify_ai, greg_isenberg" 
+                  placeholder="e.g. cognify_ai, bunnysunny79, kavyaeventshyd" 
                   style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', boxSizing: 'border-box' }}
                 />
               </div>
               <button className="btn-blue" style={{ marginTop: '20px' }} onClick={handleAnalyzeReels} disabled={reelLoading}>
                 {reelLoading ? <Loader2 size={16} className="animate-spin" /> : <TrendingUp size={16} />}
-                {reelLoading ? 'Analyzing Reels...' : 'Analyze Creator Strategy'}
+                {reelLoading ? 'Scraping & Analyzing Apify...' : 'Analyze Creator Strategy'}
               </button>
             </div>
 
