@@ -447,6 +447,12 @@ export const runPipeline = async (query, source, productDesc, senderName, autoPo
         await publishPost(postContent);
      }
      
+     return { data: { message: "Pipeline completed successfully" }, error: null };
+  } catch (err) {
+     return { data: null, error: err.message };
+  }
+};
+
 export const scrapeAndAnalyzeInstagramReels = async (username) => {
   const cleanUser = username.replace('@', '').trim();
   const token = localStorage.getItem('apify_api_key') || localStorage.getItem('apify_token') || import.meta.env.VITE_APIFY_TOKEN;
