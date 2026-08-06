@@ -76,8 +76,18 @@ const EmailWriter = () => {
   };
 
   const handleSendEmail = () => {
+    if (!result) return;
     incrementEmailsSent();
-    showToast(`Email successfully sent to ${leadEmail || 'recipient'}!`, 'success');
+    
+    const targetEmail = leadEmail || result.to_email || '';
+    const subject = result.subject || '';
+    const body = result.body || '';
+
+    // Open Gmail Compose Window in a new tab pre-filled with To, Subject, and Body
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(targetEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    window.open(gmailUrl, '_blank');
+    showToast(`Opening Gmail for ${targetEmail || 'recipient'}...`, 'success');
   };
 
   return (
