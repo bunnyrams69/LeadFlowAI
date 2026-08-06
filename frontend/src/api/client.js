@@ -251,8 +251,35 @@ export const writeBulkEmails = async (leads, productDesc, senderName) => {
   }
   return { data: results, error: null };
 };
-export const publishPost = (content, scheduleTime = null) => handleRequest(api.post('/api/post/publish', { content, schedule_time: scheduleTime }));
-export const getPostHistory = () => handleRequest(api.get('/api/post/history'));
+export const publishPost = async (content, scheduleTime = null) => {
+  try {
+     // Simulate network delay for realism
+     await new Promise(r => setTimeout(r, 800));
+     
+     const history = JSON.parse(localStorage.getItem('post_history') || '[]');
+     const newPost = {
+         post_id: "demo_" + Date.now().toString().slice(-6),
+         status: scheduleTime ? "scheduled" : "published",
+         message: content.length > 60 ? content.substring(0, 60) + "..." : content,
+         created_at: new Date().toISOString()
+     };
+     history.unshift(newPost);
+     localStorage.setItem('post_history', JSON.stringify(history));
+     
+     return { data: { status: newPost.status, message: "Post published successfully" }, error: null };
+  } catch (err) {
+     return { data: null, error: err.message };
+  }
+};
+
+export const getPostHistory = async () => {
+   try {
+      const history = JSON.parse(localStorage.getItem('post_history') || '[]');
+      return { data: history, error: null };
+   } catch (err) {
+      return { data: null, error: err.message };
+   }
+};
 export const sendChatMessage = (message, history = []) => handleRequest(api.post('/api/chat', { message, conversation_history: history }));
 export const uploadChatDocument = (file) => {
   const formData = new FormData();
