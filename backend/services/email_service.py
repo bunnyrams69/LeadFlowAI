@@ -12,8 +12,7 @@ def write_email(req: EmailRequest) -> EmailResponse:
         f"I just finished building a custom AI agent for {company} that captures sales the moment buyers are ready and handles support.\n\n"
         f"It's ready for you. Reply and I will hand it over.\n\n"
         f"Best,\n\n"
-        f"{sender}\n\n"
-        f"Sent from my iPhone"
+        f"{sender}"
     )
 
     return EmailResponse(

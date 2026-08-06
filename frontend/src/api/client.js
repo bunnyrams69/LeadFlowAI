@@ -188,7 +188,7 @@ export const writeEmail = async (lead, productDesc, senderName) => {
   const firstName = (lead.name || 'there').split(' ')[0];
   const sender = senderName || 'Ganesh';
 
-  const defaultFallbackBody = `Hey ${firstName},\n\nNoticed your work leading ${lead.title || 'operations'} at ${lead.company} in ${lead.location || 'Hyderabad'}. Figured I'd reach out.\n\nI just finished building a custom AI agent for ${lead.company} that captures sales the moment buyers are ready and handles inbound leads.\n\nIt's ready for you. Reply and I will hand it over.\n\nBest,\n\n${sender}\n\nSent from my iPhone`;
+  const defaultFallbackBody = `Hey ${firstName},\n\nNoticed your work leading ${lead.title || 'operations'} at ${lead.company} in ${lead.location || 'Hyderabad'}. Figured I'd reach out.\n\nI just finished building a custom AI agent for ${lead.company} that captures sales the moment buyers are ready and handles inbound leads.\n\nIt's ready for you. Reply and I will hand it over.\n\nBest,\n\n${sender}`;
 
   if (!token) {
     return {
@@ -226,13 +226,11 @@ Best,
 
 ${sender}
 
-Sent from my iPhone
-
 STRICT COPYWRITING RULES:
 - MUST BE UNDER 100 WORDS TOTAL.
 - NEVER introduce who you are at the start (NO "My name is...", NO "I am from...").
 - The personalization sentence MUST end with the exact words: "Figured I'd reach out."
-- The signature MUST end with "Sent from my iPhone" at the bottom.
+- The signature MUST end with "Best, \n\n ${sender}". Do NOT include "Sent from my iPhone".
 - No unsubscribe links, no pricing, text-only style.
 - Return ONLY a valid JSON object with keys "subject" and "body". Do NOT wrap in markdown codeblocks.`;
 
