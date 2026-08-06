@@ -13,7 +13,63 @@ const handleRequest = async (request) => {
 };
 
 export const healthCheck = () => handleRequest(api.get('/health'));
-export const scrapeLinkedIn = (query, maxResults = 10) => handleRequest(api.post('/api/linkedin/scrape', { query, max_results: maxResults }));
+export const scrapeLinkedIn = async (query, maxResults = 10) => {
+  const token = import.meta.env.VITE_APIFY_TOKEN;
+  if (!token) {
+    // Fallback to backend simulator if token is not set
+    return handleRequest(api.post('/api/linkedin/scrape', { query, max_results: maxResults }));
+  }
+
+  try {
+    const actorId = 'harvestapi/linkedin-profile-search';
+    
+    // 1. Start Run
+    const startRes = await axios.post(
+      `https://api.apify.com/v2/actors/${actorId}/runs?token=${token}`,
+      {
+        searchQuery: query,
+        profileScraperMode: "Full",
+        startPage: 1,
+        takePages: 1,
+        maxItems: maxResults
+      }
+    );
+    
+    const runId = startRes.data.data.id;
+    const datasetId = startRes.data.data.defaultDatasetId;
+    
+    // 2. Poll Status (Frontend polling bypasses 100s server timeouts!)
+    let status = 'RUNNING';
+    while (status !== 'SUCCEEDED' && status !== 'FAILED' && status !== 'ABORTED' && status !== 'TIMED-OUT') {
+      await new Promise(r => setTimeout(r, 4000));
+      const statusRes = await axios.get(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`);
+      status = statusRes.data.data.status;
+    }
+    
+    if (status !== 'SUCCEEDED') throw new Error(`Apify run failed with status: ${status}`);
+    
+    // 3. Fetch Dataset
+    const datasetRes = await axios.get(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}`);
+    const items = datasetRes.data;
+    
+    // 4. Map to Lead format
+    const leads = items.map(item => ({
+      name: item.fullName || `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Unknown',
+      title: item.headline || item.title || 'Professional',
+      company: item.companyName || item.currentCompany || 'Independent',
+      source: 'LinkedIn',
+      email: item.email || null,
+      profile_url: item.linkedinUrl || item.profileUrl || '',
+      bio: item.summary || item.about || item.headline || '',
+      scraped_at: new Date().toISOString()
+    })).slice(0, maxResults);
+    
+    return { data: leads, error: null };
+  } catch (err) {
+    console.error("Apify Scrape Error:", err);
+    return { data: null, error: err.response?.data?.error?.message || err.message || 'Apify scrape failed' };
+  }
+};
 export const getLinkedInLeads = () => handleRequest(api.get('/api/linkedin/leads'));
 export const scrapeInstagram = (query, maxPosts = 10) => handleRequest(api.post('/api/instagram/scrape', { query, max_posts: maxPosts }));
 export const getInstagramLeads = () => handleRequest(api.get('/api/instagram/leads'));
