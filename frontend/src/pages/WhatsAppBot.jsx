@@ -72,7 +72,7 @@ const WhatsAppBot = () => {
     }
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
@@ -84,29 +84,105 @@ const WhatsAppBot = () => {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, newMsg]);
+    const updatedHistory = [...messages, newMsg];
+    setMessages(updatedHistory);
     setInputMessage('');
     setIsTyping(true);
 
-    // Smart Bot AI Response Generator
-    setTimeout(() => {
-      let botReply = `Thanks for reaching out! A specialist from ${businessName} will follow up shortly to help you scale your outreach.`;
-      const lower = userText.toLowerCase();
+    // Read real scraped leads from localStorage for RAG context
+    const li = JSON.parse(localStorage.getItem('linkedin_leads') || '[]');
+    const ig = JSON.parse(localStorage.getItem('insta_leads') || '[]');
+    const allLeads = [...li, ...ig];
+    const topLead = allLeads[0] || { name: 'Senthilraj Selvaraj', company: 'Skin Care Clinics', title: 'Founder', location: 'Hyderabad' };
+    const secondLead = allLeads[1] || { name: 'Geetanjali Sharma', company: 'GeeNi Terracotta Jewellery', title: 'Owner', location: 'Hyderabad' };
 
-      if (lower.includes('lead') || lower.includes('hot') || lower.includes('prospect') || lower.includes('top')) {
-        botReply = `Yes! 🎯 We currently have 47 high-intent leads qualified in your pipeline (Scores 90+), including top decision-makers in Real Estate, Dental Clinics, and Tech. Would you like to schedule a 15-minute demo to see them?`;
+    const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
+
+    // Try OpenRouter AI for 100% dynamic answers to ANY question
+    if (token) {
+      try {
+        const leadsSummary = allLeads.length > 0 
+          ? allLeads.slice(0, 5).map((l, i) => `${i+1}. ${l.name} (${l.title} at ${l.company}, ${l.location || 'Hyderabad'})`).join('\n')
+          : "1. Senthilraj Selvaraj (Founder at Skin Care Clinics, Hyderabad)\n2. Geetanjali Sharma (Owner at GeeNi Terracotta, Hyderabad)";
+
+        const systemPrompt = `You are Cognify AI's automated WhatsApp Lead Qualification Bot. You are talking to a prospective client on WhatsApp.
+Business Name: ${businessName}
+
+Current Scraped Leads Database:
+${leadsSummary}
+
+Personality: ${personality}
+Goal: Help the client, answer their specific questions about leads, pricing, services, or automation, and qualify them for a live demo with founder Ganesh in Hyderabad.
+
+Keep your response conversational, concise (under 50 words), and friendly with emojis suitable for WhatsApp.`;
+
+        const msgs = [
+          { role: 'system', content: systemPrompt },
+          ...updatedHistory.map(m => ({
+            role: m.sender === 'bot' ? 'assistant' : 'user',
+            content: m.text
+          }))
+        ];
+
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
+            'X-Title': 'LeadFlow AI'
+          },
+          body: JSON.stringify({
+            model: 'mistralai/mistral-7b-instruct:free',
+            messages: msgs,
+            max_tokens: 150
+          })
+        });
+
+        const data = await res.json();
+        if (data?.choices?.[0]?.message?.content) {
+          const aiReply = data.choices[0].message.content.trim();
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now() + 1,
+              sender: 'bot',
+              text: aiReply,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+          ]);
+          setIsTyping(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('WhatsApp OpenRouter call failed, using multi-intent engine:', err);
+      }
+    }
+
+    // Comprehensive Multi-Turn Fallback Engine for offline / no-token mode
+    setTimeout(() => {
+      let botReply = `Thanks for reaching out! A specialist from ${businessName} will follow up shortly to help scale your outreach.`;
+      const lower = userText.toLowerCase();
+      const prevBotMsg = messages[messages.length - 1]?.text?.toLowerCase() || '';
+
+      // Contextual follow-up to "which one?" / "who?" / "which lead?"
+      if (lower.includes('which') || lower.includes('who') || lower.includes('name') || lower.includes('details') || lower.includes('show')) {
+        botReply = `Our #1 top-rated lead right now is **${topLead.name}** (${topLead.title} at ${topLead.company}). We also have **${secondLead.name}** (${secondLead.company}). Would you like me to generate a personalized email for ${topLead.name}?`;
+        setLeadScore({ score: 95, label: 'TOP PROSPECT TARGETED 🎯' });
+      } else if (lower.includes('lead') || lower.includes('hot') || lower.includes('prospect') || lower.includes('top')) {
+        botReply = `Yes! 🎯 We currently have ${allLeads.length > 0 ? allLeads.length : 47} high-intent leads in your database (Scores 90+), including **${topLead.name}** at ${topLead.company}. Which one would you like to target first?`;
         setLeadScore({ score: 94, label: 'HIGH-INTENT LEAD DISCOVERED 🟢' });
-      } else if (lower.includes('yes') || lower.includes('sure') || lower.includes('book') || lower.includes('demo') || lower.includes('schedule')) {
-        botReply = `Perfect! 📅 I've reserved a demo slot for you. A calendar invite has been sent to your email. We look forward to meeting you!`;
+      } else if (lower.includes('yes') || lower.includes('sure') || lower.includes('book') || lower.includes('demo') || lower.includes('schedule') || lower.includes('ok')) {
+        botReply = `Perfect! 📅 I've reserved a demo slot for you with founder Ganesh. A calendar invite has been sent to your email. We look forward to meeting you!`;
         setLeadScore({ score: 98, label: 'HIGHLY QUALIFIED LEAD 🟢' });
-      } else if (lower.includes('budget') || lower.includes('$') || lower.includes('k') || lower.includes('cost') || lower.includes('price') || lower.includes('rate') || lower.includes('fee')) {
-        botReply = `Our packages are flexible! We offer a free tier (50 leads/month) and Pro plans starting at ₹999/month. What is your estimated monthly budget?`;
+      } else if (lower.includes('budget') || lower.includes('$') || lower.includes('k') || lower.includes('cost') || lower.includes('price') || lower.includes('rate') || lower.includes('fee') || lower.includes('how much')) {
+        botReply = `Our packages are flexible! We offer a free trial (50 leads) and Pro plans starting at ₹999/month. What monthly budget range works best for you?`;
       } else if (lower.includes('week') || lower.includes('now') || lower.includes('month') || lower.includes('today') || lower.includes('soon')) {
         botReply = `Great timeline! ⚡ Should I go ahead and book a 15-minute onboarding call with ${businessName}'s founder?`;
       } else if (lower.includes('service') || lower.includes('what') || lower.includes('do') || lower.includes('offer') || lower.includes('help')) {
-        botReply = `Cognify AI automates your entire sales funnel: 1. Real-time Lead Scraping, 2. AI Cold Emails, 3. WhatsApp Qualification, 4. Post Automation. Which service interests you?`;
-      } else if (lower.includes('who') || lower.includes('founder') || lower.includes('ganesh') || lower.includes('cognify')) {
-        botReply = `Cognify AI is an applied AI automation studio based in Hyderabad, founded by Ganesh to help businesses scale client acquisition 3x faster using GenAI!`;
+        botReply = `${businessName} automates your entire sales funnel: 1. Real-time Lead Scraping, 2. AI Cold Emails, 3. WhatsApp Qualification, 4. Post Automation. Which feature interests you most?`;
+      } else if (lower.includes('founder') || lower.includes('ganesh') || lower.includes('cognify')) {
+        botReply = `${businessName} is an applied AI automation studio based in Hyderabad, founded by Ganesh to help businesses scale client acquisition 3x faster using GenAI!`;
       } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
         botReply = `Hello! 👋 How can ${businessName} assist you with lead generation today?`;
       }
@@ -121,7 +197,7 @@ const WhatsAppBot = () => {
         },
       ]);
       setIsTyping(false);
-    }, 800);
+    }, 700);
   };
 
   return (
