@@ -19,8 +19,8 @@ const Dashboard = () => {
   const [pipeForm, setPipeForm] = useState({
     query: '',
     source: 'linkedin',
-    productDescription: '',
-    senderName: '',
+    productDescription: 'Cognify AI is an intelligent B2B lead generation platform that automates prospecting and hyper-personalized outreach. We help businesses scale their client acquisition 3x faster using AI.',
+    senderName: 'Ganesh',
     autoPost: false
   });
 
