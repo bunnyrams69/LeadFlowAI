@@ -41,7 +41,7 @@ const PostAutomation = () => {
                'X-Title': 'LeadFlow AI'
             },
             body: JSON.stringify({
-               model: 'meta-llama/llama-3-8b-instruct:free',
+               model: 'mistralai/mistral-7b-instruct:free',
                messages: [{ role: 'user', content: 'Write a LinkedIn post for a solo AI automation founder from Cognify AI Hyderabad. The post should showcase their AI services (RAG chatbots, WhatsApp bots, lead automation). MUST USE EXACTLY THIS FORMAT:\n1. A short, punchy, controversial hook (e.g. "Stop doing [bad thing]. It is killing your [result] 🔥")\n2. A bold "The truth is..." statement.\n3. A metric or personal experience ("After building 50+ bots this year...")\n4. The core insight.\n5. Exactly 3 numbered "hacks" or lessons, each with a bold title and short description.\n6. A concluding thought ("Most people treat AI like...").\n7. An engaging question ("Which of these are you trying first? Drop a comment 👇").\n8. A "PS:" promoting a live masterclass this Saturday in Koramangala.\nKeep it highly structured and readable.' }],
                max_tokens: 500
             })

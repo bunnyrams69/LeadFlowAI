@@ -211,7 +211,7 @@ RULES:
 5. Return ONLY a valid JSON object with two keys: "subject" and "body". Do not include markdown formatting or backticks around the JSON.`;
 
     const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-      model: 'meta-llama/llama-3-8b-instruct:free',
+      model: 'mistralai/mistral-7b-instruct:free',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' }
     }, {
