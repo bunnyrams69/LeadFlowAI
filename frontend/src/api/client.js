@@ -71,6 +71,12 @@ export const scrapeLinkedIn = async (query, maxResults = 10) => {
       scraped_at: new Date().toISOString()
     })).slice(0, maxResults);
     
+    // 5. Fallback if Apify returns 0 results (e.g. invalid cookie, rate limit)
+    if (leads.length === 0) {
+      console.warn("Apify returned 0 leads. Falling back to simulator to prevent empty table.");
+      return handleRequest(api.post('/api/linkedin/scrape', { query, max_results: maxResults }));
+    }
+    
     return { data: leads, error: null };
   } catch (err) {
     console.error("Apify Scrape Error:", err);
