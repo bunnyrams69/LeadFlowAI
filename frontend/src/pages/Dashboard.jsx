@@ -67,54 +67,48 @@ const Dashboard = () => {
   };
 
   const runDemoSequence = async () => {
-     setDemoRunning(true);
-     
-     try {
-       // Step 1
-       setPipelineActive(0);
-       showToast('Step 1: Scraping LinkedIn leads...', 'success');
-       setIsLoading(true);
-       const scrapeRes = await scrapeLinkedIn("AI automation Hyderabad", 4);
-       if(scrapeRes.data) {
-         localStorage.setItem('linkedin_leads', JSON.stringify(scrapeRes.data));
-         fetchLeads();
-       }
-       setIsLoading(false);
-       
-       // Step 2
-       await new Promise(r => setTimeout(r, 2000));
-       setPipelineActive(1);
-       showToast('Step 2: Writing personalized emails...', 'success');
-       setIsLoading(true);
-       if (scrapeRes.data && scrapeRes.data.length > 0) {
-           await writeEmail(scrapeRes.data[0], "AI Chatbots", "Cognify AI");
-       }
-       setIsLoading(false);
-       
-       // Step 3
-       await new Promise(r => setTimeout(r, 2500));
-       setPipelineActive(2);
-       showToast('Step 3: Publishing LinkedIn post...', 'success');
-       setIsLoading(true);
-       await publishPost("Just automated lead generation for 4 businesses in Hyderabad using AI. RAG chatbots + WhatsApp bots = 3x more qualified leads. DM me if you want the same system. — Cognify AI");
-       setIsLoading(false);
-       
-       // Step 4
-       await new Promise(r => setTimeout(r, 2000));
-       setPipelineActive(3);
-       showToast('Step 4: RAG chatbot ready...', 'success');
-       
-       // Step 5
-       await new Promise(r => setTimeout(r, 1500));
-       setPipelineActive(-1);
-       incrementEmailsSent();
-       incrementPostsPublished();
-       showToast('✓ Full pipeline completed in 8 seconds — 4 leads, 1 email, 1 post', 'success');
-     } catch (err) {
-       console.error(err);
-     }
-     
-     setDemoRunning(false);
+    setDemoRunning(true);
+
+    try {
+      const demoLeads = [
+        { name: 'Arjun Mehta', title: 'CEO', company: 'TechScale Solutions', source: 'LinkedIn', email: 'arjun@techscale.com', profile_url: 'https://linkedin.com/in/arjunmehta', bio: 'Serial entrepreneur building AI-first products. Previously scaled a SaaS startup to $2M ARR.', scraped_at: new Date().toISOString() },
+        { name: 'Priya Sharma', title: 'Head of Marketing', company: 'GrowthLoop Digital', source: 'LinkedIn', email: 'priya@growthloop.in', profile_url: 'https://linkedin.com/in/priyasharma', bio: 'Growth marketer obsessed with data-driven campaigns. Helped 50+ D2C brands scale.', scraped_at: new Date().toISOString() },
+        { name: 'Ravi Nair', title: 'Founder', company: 'CloudNine Dental', source: 'LinkedIn', email: 'ravi@cloudninedental.com', profile_url: 'https://linkedin.com/in/ravinair', bio: 'Dentist turned entrepreneur. Running 3 dental clinics across Hyderabad.', scraped_at: new Date().toISOString() },
+        { name: 'Sneha Reddy', title: 'Director of Operations', company: 'EventCraft India', source: 'LinkedIn', email: 'sneha@eventcraft.in', profile_url: 'https://linkedin.com/in/snehareddy', bio: 'Event management professional with 8 years experience. Organized 200+ corporate events.', scraped_at: new Date().toISOString() }
+      ];
+
+      // Step 0: Show toast 'Scraping LinkedIn leads...', set pipelineActive(0), wait 1.5s
+      showToast('Scraping LinkedIn leads...');
+      setPipelineActive(0);
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Step 1: Save demoLeads to localStorage, show toast 'Found 4 leads!', set pipelineActive(1), wait 1.5s
+      localStorage.setItem('linkedin_leads', JSON.stringify(demoLeads));
+      showToast('Found 4 leads!');
+      setPipelineActive(1);
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Step 2: Show toast 'Writing personalized emails...', set pipelineActive(2), wait 1.5s
+      showToast('Writing personalized emails...');
+      setPipelineActive(2);
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Step 3: Show toast 'Publishing LinkedIn post...', set pipelineActive(3), wait 1.5s
+      showToast('Publishing LinkedIn post...');
+      setPipelineActive(3);
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Final: Show toast 'Pipeline completed! 4 leads, 1 email, 1 post', call fetchLeads(), incrementEmailsSent(), incrementPostsPublished(), set pipelineActive(-1)
+      showToast('Pipeline completed! 4 leads, 1 email, 1 post');
+      fetchLeads();
+      incrementEmailsSent();
+      incrementPostsPublished();
+      setPipelineActive(-1);
+    } catch (err) {
+      console.error(err);
+    }
+
+    setDemoRunning(false);
   };
 
   const replyRate = emailsSent === 0 ? '0%' : '12%';

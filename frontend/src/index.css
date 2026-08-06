@@ -1,78 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   --navy: #0F1629;
   --navy-light: #1E293B;
   --blue: #2563EB;
   --blue-hover: #1D4ED8;
-  --bg-gray: #F9FAFB;
-  --border: #E5E7EB;
+  --purple: #7C3AED;
+  --purple-hover: #6D28D9;
+  --bg-gray: #F8FAFC;
+  --border: #E2E8F0;
 }
 
 body {
   margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-gray);
+  color: #0F172A;
   height: 100vh;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Premium Card with Glass & Gradient support */
 .card {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 14px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
   padding: 20px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+              background 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.card:hover {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+  box-shadow: 0 12px 24px -4px rgba(37, 99, 235, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.04);
+  border-color: #CBD5E1;
+  transform: translateY(-2px);
+}
+
+/* Glassmorphism Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
+}
+
+/* Buttons */
 .btn-blue {
-  background: var(--blue);
+  background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 10px;
+  padding: 10px 18px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 .btn-blue:hover:not(:disabled) {
-  background: var(--blue-hover);
+  background: linear-gradient(135deg, var(--blue-hover) 0%, var(--purple-hover) 100%);
+  transform: scale(1.02) translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.38);
 }
+
+.btn-blue:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .btn-blue:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-demo {
   background: white;
   color: var(--blue);
-  border: 1px solid var(--blue);
-  border-radius: 8px;
-  padding: 8px 16px;
+  border: 1.5px solid var(--blue);
+  border-radius: 10px;
+  padding: 10px 18px;
   cursor: pointer;
+  font-family: inherit;
   font-weight: 600;
-  transition: all 0.2s;
+  letter-spacing: 0.01em;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
+
 .btn-demo:hover:not(:disabled) {
-  background: rgba(37,99,235,0.05);
+  background: rgba(37, 99, 235, 0.06);
+  transform: scale(1.02) translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+  border-color: var(--blue-hover);
 }
+
+.btn-demo:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .btn-demo:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
+/* Status Tags */
 .tag {
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
 }
 
 .tag-sent, .tag-published { background: #DCFCE7; color: #166534; }
@@ -80,25 +140,43 @@ body {
 .tag-linkedin { background: #DBEAFE; color: #1E40AF; }
 .tag-instagram { background: #F3E8FF; color: #6B21A8; }
 
+/* Enhanced Table Styling */
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  font-weight: 600;
+  color: #475569;
+  background-color: #F8FAFC;
 }
 
 th, td {
-  padding: 12px;
+  padding: 12px 16px;
   text-align: left;
   border-bottom: 1px solid var(--border);
 }
 
-tr:hover td {
-  background-color: var(--bg-gray);
+tbody tr:nth-child(even) {
+  background-color: rgba(248, 250, 252, 0.7);
 }
 
+tbody tr:nth-child(odd) {
+  background-color: #FFFFFF;
+}
+
+tr:hover td {
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+/* Animations */
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
 .animate-spin {
   animation: spin 1s linear infinite;
 }
@@ -120,19 +198,33 @@ tr:hover td {
 }
 
 @keyframes pulse-shadow {
-  0% { box-shadow: 0 0 0 0 rgba(37,99,235, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(37,99,235, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(37,99,235, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
 }
+
 .pulse-active {
   animation: pulse-shadow 1.5s infinite;
   border-color: var(--blue) !important;
 }
 
 .page-transition {
-  animation: fadein 0.2s ease-in;
+  animation: fadein 0.25s ease-in-out;
 }
+
 @keyframes fadein {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Shimmer Loading Effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
 }
