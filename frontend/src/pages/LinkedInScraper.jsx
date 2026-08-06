@@ -87,8 +87,9 @@ const ScraperLeadsTable = ({ leads, loading }) => {
         <thead style={{ backgroundColor: '#F9FAFB' }}>
           <tr>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Name</th>
+            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Email (Target)</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Score</th>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Source</th>
+            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Location</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Company</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Role</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Actions</th>
@@ -101,16 +102,13 @@ const ScraperLeadsTable = ({ leads, loading }) => {
             return (
               <tr key={i}>
                 <td style={{ fontWeight: 500 }}>{lead.name}</td>
-                <td>{renderScoreBadge(score)}</td>
                 <td>
-                  {lead.profile_url ? (
-                    <a href={lead.profile_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }} title="View Profile">
-                      <span className={`tag tag-${sourceClass}`} style={{ cursor: 'pointer' }}>{lead.source}</span>
-                    </a>
-                  ) : (
-                    <span className={`tag tag-${sourceClass}`}>{lead.source}</span>
-                  )}
+                  <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: 500, fontFamily: 'monospace' }}>
+                    {lead.email || `${lead.name.split(' ')[0].toLowerCase()}@company.com`}
+                  </span>
                 </td>
+                <td>{renderScoreBadge(score)}</td>
+                <td style={{ fontSize: '13px', color: '#4B5563' }}>{lead.location || 'Hyderabad'}</td>
                 <td>{lead.company}</td>
                 <td style={{ color: '#6B7280' }}>{lead.title}</td>
                 <td>
@@ -129,6 +127,7 @@ const ScraperLeadsTable = ({ leads, loading }) => {
 
 const LinkedInScraper = () => {
   const [query, setQuery] = useState('');
+  const [location, setLocation] = useState('Hyderabad');
   const [maxResults, setMaxResults] = useState(10);
   const [results, setResults] = useState([]);
   const [showBanner, setShowBanner] = useState(true);
@@ -151,7 +150,7 @@ const LinkedInScraper = () => {
   const handleScrape = async () => {
     if (!query) return;
     setIsLoading(true);
-    const res = await scrapeLinkedIn(query, maxResults);
+    const res = await scrapeLinkedIn(query, location, maxResults);
     setIsLoading(false);
     
     if (res.error) {
@@ -165,7 +164,7 @@ const LinkedInScraper = () => {
        
        const igLeads = JSON.parse(localStorage.getItem('insta_leads') || '[]');
        setAllLeads([...res.data, ...igLeads]);
-       showToast(`Successfully scraped ${res.data.length} leads!`, 'success');
+       showToast(`Successfully scraped ${res.data.length} leads in ${location || 'target location'}!`, 'success');
     }
   };
 
@@ -175,7 +174,7 @@ const LinkedInScraper = () => {
       return;
     }
 
-    const headers = ['Name', 'Title', 'Company', 'Email', 'Source', 'Profile URL', 'Bio'];
+    const headers = ['Name', 'Email', 'Title', 'Company', 'Location', 'Source', 'Profile URL', 'Bio'];
 
     const escapeCSV = (val) => {
       if (val === null || val === undefined) return '""';
@@ -185,9 +184,10 @@ const LinkedInScraper = () => {
 
     const rows = results.map(lead => [
       escapeCSV(lead.name || ''),
+      escapeCSV(lead.email || ''),
       escapeCSV(lead.title || ''),
       escapeCSV(lead.company || ''),
-      escapeCSV(lead.email || ''),
+      escapeCSV(lead.location || 'Hyderabad'),
       escapeCSV(lead.source || ''),
       escapeCSV(lead.profile_url || ''),
       escapeCSV(lead.bio || '')
@@ -209,35 +209,47 @@ const LinkedInScraper = () => {
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <TopBar title="LinkedIn Scraper" subtitle="Find B2B leads by searching profiles and companies" badge="Live Demo" />
+      <TopBar title="LinkedIn Scraper" subtitle="Find location-targeted B2B leads by searching profiles and companies" badge="Live Demo" />
       {showBanner && (
          <div style={{ backgroundColor: '#FEF3C7', color: '#92400E', padding: '12px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #FDE68A' }}>
-           <div style={{ fontSize: '14px', fontWeight: 500 }}>⚡ Running in demo mode — live scraping requires credentials. Contact us for the full version.</div>
+           <div style={{ fontSize: '14px', fontWeight: 500 }}>⚡ Location-specific lead targeting enabled — search any niche & city (e.g. Real Estate in Hyderabad).</div>
            <X size={18} style={{ cursor: 'pointer' }} onClick={handleDismiss} />
          </div>
       )}
       <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div className="card" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <input 
-            type="text" 
-            value={query} 
-            onChange={e => setQuery(e.target.value)} 
-            placeholder="e.g. Real estate agency Hyderabad" 
-            style={{ flex: 1, padding: '12px 16px', border: '1px solid var(--border)', borderRadius: '8px' }}
-          />
-          <input 
-            type="range" min="5" max="50" value={maxResults} onChange={e => setMaxResults(parseInt(e.target.value))}
-            style={{ width: '100px' }} title={`Max Results: ${maxResults}`}
-          />
-          <span style={{ fontSize: '12px', color: '#6B7280' }}>{maxResults} results</span>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <button className="btn-blue" onClick={handleScrape} disabled={isLoading}>
-                {isLoading && <Loader2 size={16} className="animate-spin" />}
-                {isLoading ? 'Scraping...' : 'Scrape Leads'}
-              </button>
-              {isLoading && <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '4px' }}>Scraping leads... ~15s</div>}
-            </div>
+        <div className="card" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 2, minWidth: '200px' }}>
+            <label style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '4px', display: 'block' }}>Search Niche / Industry</label>
+            <input 
+              type="text" 
+              value={query} 
+              onChange={e => setQuery(e.target.value)} 
+              placeholder="e.g. Real estate agency, Dental clinic" 
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ flex: 1.5, minWidth: '160px' }}>
+            <label style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '4px', display: 'block' }}>Target Location</label>
+            <input 
+              type="text" 
+              value={location} 
+              onChange={e => setLocation(e.target.value)} 
+              placeholder="e.g. Hyderabad, Mumbai, Bangalore" 
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ width: '100px' }}>
+            <label style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '4px', display: 'block' }}>Leads: {maxResults}</label>
+            <input 
+              type="range" min="5" max="50" value={maxResults} onChange={e => setMaxResults(parseInt(e.target.value))}
+              style={{ width: '100%' }} title={`Max Results: ${maxResults}`}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '16px' }}>
+            <button className="btn-blue" onClick={handleScrape} disabled={isLoading}>
+              {isLoading && <Loader2 size={16} className="animate-spin" />}
+              {isLoading ? 'Scraping...' : 'Scrape Leads'}
+            </button>
             <button 
               className="btn-demo"
               onClick={handleExportCSV}

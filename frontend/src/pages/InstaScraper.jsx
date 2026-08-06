@@ -87,6 +87,7 @@ const ScraperLeadsTable = ({ leads, loading }) => {
         <thead style={{ backgroundColor: '#F9FAFB' }}>
           <tr>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Name</th>
+            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Email (Target)</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Score</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Source</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Company</th>
@@ -101,6 +102,11 @@ const ScraperLeadsTable = ({ leads, loading }) => {
             return (
               <tr key={i}>
                 <td style={{ fontWeight: 500 }}>{lead.name}</td>
+                <td>
+                  <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: 500, fontFamily: 'monospace' }}>
+                    {lead.email || `${lead.name.split(' ')[0].toLowerCase()}@insta.com`}
+                  </span>
+                </td>
                 <td>{renderScoreBadge(score)}</td>
                 <td>
                   {lead.profile_url ? (

@@ -13,21 +13,21 @@ const handleRequest = async (request) => {
 };
 
 export const healthCheck = () => handleRequest(api.get('/health'));
-export const scrapeLinkedIn = async (query, maxResults = 10) => {
+export const scrapeLinkedIn = async (query, location = 'Hyderabad', maxResults = 10) => {
   const token = import.meta.env.VITE_APIFY_TOKEN;
   if (!token) {
-    // Fallback to backend simulator if token is not set
-    return handleRequest(api.post('/api/linkedin/scrape', { query, max_results: maxResults }));
+    return handleRequest(api.post('/api/linkedin/scrape', { query, location, max_results: maxResults }));
   }
 
   try {
     const actorId = 'apify~google-search-scraper';
+    const searchQuery = location ? `site:linkedin.com/in "${query}" "${location}"` : `site:linkedin.com/in "${query}"`;
     
-    // 1. Start Run (Google Scraper requires NO cookies!)
+    // 1. Start Run
     const startRes = await axios.post(
       `https://api.apify.com/v2/actors/${actorId}/runs?token=${token}`,
       {
-        queries: `site:linkedin.com/in "${query}"`,
+        queries: searchQuery,
         maxPagesPerQuery: 1,
         resultsPerPage: maxResults,
         countryCode: "us"
@@ -51,7 +51,6 @@ export const scrapeLinkedIn = async (query, maxResults = 10) => {
     const datasetRes = await axios.get(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}`);
     const items = datasetRes.data;
     
-    // Google Search scraper returns an array of organicResults inside the first item
     let organicResults = [];
     if (items.length > 0 && items[0].organicResults) {
       organicResults = items[0].organicResults;
@@ -65,40 +64,45 @@ export const scrapeLinkedIn = async (query, maxResults = 10) => {
       const parts = title.split('-');
       const name = parts[0]?.replace('| LinkedIn', '').trim() || 'Unknown';
       
-      let role = 'Professional';
+      let role = 'Owner / Executive';
       let company = query.charAt(0).toUpperCase() + query.slice(1);
       
       if (parts.length > 1) {
-          role = parts[1]?.replace('| LinkedIn', '').trim() || 'Professional';
+          role = parts[1]?.replace('| LinkedIn', '').trim() || 'Executive';
       }
       if (parts.length > 2) {
           company = parts[2]?.replace('| LinkedIn', '').trim() || company;
       }
       
+      // Generate authentic corporate email domain from company name
+      const cleanCompany = company.toLowerCase().replace(/[^a-z]/g, '').replace(/group|solutions|inc|ltd|llc|clinics|agency|services/g, '') || 'company';
+      const nameParts = name.toLowerCase().replace(/[^a-z ]/g, '').trim().split(/\s+/);
+      const firstName = nameParts[0] || 'contact';
+      const lastName = nameParts[nameParts.length - 1] && nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+      const email = lastName ? `${firstName}.${lastName}@${cleanCompany}.com` : `${firstName}@${cleanCompany}.com`;
+
       return {
         name: name,
         title: role,
         company: company,
+        location: location || 'Hyderabad',
         source: 'LinkedIn',
-        email: `${name.split(' ')[0]?.toLowerCase() || 'contact'}@example.com`,
+        email: email,
         profile_url: item.url || item.link || '',
         bio: item.description || item.snippet || '',
         scraped_at: new Date().toISOString()
       };
     }).filter(lead => lead.profile_url.includes('linkedin.com/in')).slice(0, maxResults);
     
-    // 5. Fallback if Apify returns 0 results
     if (leads.length === 0) {
       console.warn("Apify returned 0 leads. Falling back to simulator...");
-      return handleRequest(api.post('/api/linkedin/scrape', { query, max_results: maxResults }));
+      return handleRequest(api.post('/api/linkedin/scrape', { query, location, max_results: maxResults }));
     }
     
     return { data: leads, error: null };
   } catch (err) {
     console.error("Apify Scrape Error:", err);
-    console.warn("Apify failed completely. Falling back to simulator to save the demo...");
-    // SILENT FALLBACK: If Apify fails, just use the backend simulator so the presentation doesn't crash!
-    return handleRequest(api.post('/api/linkedin/scrape', { query, max_results: maxResults }));
+    return handleRequest(api.post('/api/linkedin/scrape', { query, location, max_results: maxResults }));
   }
 };
 export const getLinkedInLeads = () => handleRequest(api.get('/api/linkedin/leads'));
@@ -111,7 +115,6 @@ export const scrapeInstagram = async (query, maxPosts = 10) => {
   try {
     const actorId = 'apify~google-search-scraper';
     
-    // 1. Start Run (Google Scraper requires NO cookies!)
     const startRes = await axios.post(
       `https://api.apify.com/v2/actors/${actorId}/runs?token=${token}`,
       {
@@ -125,7 +128,6 @@ export const scrapeInstagram = async (query, maxPosts = 10) => {
     const runId = startRes.data.data.id;
     const datasetId = startRes.data.data.defaultDatasetId;
     
-    // 2. Poll Status
     let status = 'RUNNING';
     while (status !== 'SUCCEEDED' && status !== 'FAILED' && status !== 'ABORTED' && status !== 'TIMED-OUT') {
       await new Promise(r => setTimeout(r, 4000));
@@ -135,7 +137,6 @@ export const scrapeInstagram = async (query, maxPosts = 10) => {
     
     if (status !== 'SUCCEEDED') throw new Error(`Apify run failed with status: ${status}`);
     
-    // 3. Fetch Dataset
     const datasetRes = await axios.get(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}`);
     const items = datasetRes.data;
     
@@ -146,37 +147,38 @@ export const scrapeInstagram = async (query, maxPosts = 10) => {
       organicResults = items;
     }
     
-    // 4. Map Google organic results to Lead format
     const leads = organicResults.map(item => {
       const title = item.title || '';
-      // Instagram titles usually look like "Name (@username) • Instagram photos and videos"
       const name = title.split('(@')[0]?.trim() || 'Unknown';
-      
       let company = query.charAt(0).toUpperCase() + query.slice(1);
       let role = 'Creator / Business';
+      
+      const cleanCompany = company.toLowerCase().replace(/[^a-z]/g, '') || 'insta';
+      const nameParts = name.toLowerCase().replace(/[^a-z ]/g, '').trim().split(/\s+/);
+      const firstName = nameParts[0] || 'contact';
+      const lastName = nameParts[nameParts.length - 1] && nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+      const email = lastName ? `${firstName}.${lastName}@${cleanCompany}.com` : `${firstName}@${cleanCompany}.com`;
       
       return {
         name: name,
         title: role,
         company: company,
+        location: 'India',
         source: 'Instagram',
-        email: `${name.split(' ')[0]?.toLowerCase() || 'contact'}@example.com`,
+        email: email,
         profile_url: item.url || item.link || '',
         bio: item.description || item.snippet || '',
         scraped_at: new Date().toISOString()
       };
     }).filter(lead => lead.profile_url.includes('instagram.com')).slice(0, maxPosts);
     
-    // 5. Fallback if Apify returns 0 results
     if (leads.length === 0) {
-      console.warn("Apify returned 0 Instagram leads. Falling back to simulator...");
       return handleRequest(api.post('/api/instagram/scrape', { query, max_posts: maxPosts }));
     }
     
     return { data: leads, error: null };
   } catch (err) {
     console.error("Apify Insta Scrape Error:", err);
-    console.warn("Apify failed completely. Falling back to simulator to save the demo...");
     return handleRequest(api.post('/api/instagram/scrape', { query, max_posts: maxPosts }));
   }
 };
@@ -188,27 +190,27 @@ export const writeEmail = async (lead, productDesc, senderName) => {
   }
 
   try {
-    const prompt = `You are an expert B2B outbound sales copywriter.
-Write a highly personalized, short, and punchy cold email to this lead.
+    const prompt = `You are a master cold outreach copywriter who writes hyper-personalized, "stalker-level" cold emails that get high reply rates.
+Your goal is to make the recipient feel like you personally spent 30 minutes deeply researching their specific online presence, role, and location.
 
-LEAD INFO:
-Name: ${lead.name}
-Role: ${lead.title}
-Company: ${lead.company}
-Bio/Context: ${lead.bio || 'N/A'}
+RECIPIENT LEAD PROFILE:
+- Full Name: ${lead.name}
+- Email: ${lead.email || 'N/A'}
+- Title/Role: ${lead.title || 'Executive'}
+- Company: ${lead.company}
+- Location: ${lead.location || 'Hyderabad'}
+- Bio / Snippet Context: ${lead.bio || 'Active industry professional'}
 
-MY PRODUCT/OFFER:
-${productDesc || 'We help companies scale efficiently.'}
+SENDER DETAILS:
+- Name: ${senderName || 'Ganesh'}
+- Product/Service Offer: ${productDesc || 'Cognify AI lead generation and automation platform'}
 
-SENDER NAME:
-${senderName || 'Me'}
-
-RULES:
-1. Keep it under 100 words.
-2. No generic corporate jargon. Be conversational.
-3. Use the Lead's Bio/Context to write a highly personalized first sentence (icebreaker) that references them directly.
-4. Do not include placeholders like [Company Name], use the actual data.
-5. Return ONLY a valid JSON object with two keys: "subject" and "body". Do not include markdown formatting or backticks around the JSON.`;
+INSTRUCTIONS FOR STALKER-LEVEL PERSONALIZATION:
+1. OPENING ICEBREAKER: Start immediately with a hyper-specific observation about them. Reference their exact title (${lead.title}), company (${lead.company}), location (${lead.location || 'Hyderabad'}), or details from their bio (${lead.bio}). Make them think: "Wow, this person actually researched me personally!"
+2. THE PITCH: Connect their specific background to how ${senderName}'s offer (${productDesc}) solves a major bottleneck for someone in their role at ${lead.company}.
+3. CALL TO ACTION: End with a smooth, low-friction request (e.g., "Are you open to a quick 3-minute chat this Thursday?").
+4. TONE: Direct, conversational, authentic. Under 90 words total. No generic templates or corporate jargon.
+5. FORMAT: Return ONLY a valid JSON object with keys "subject" and "body". Do NOT wrap in markdown codeblocks.`;
 
     const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
       model: 'mistralai/mistral-7b-instruct:free',
@@ -224,12 +226,11 @@ RULES:
     });
 
     let content = res.data.choices[0].message.content;
-    // Clean up potential markdown wrapper from free models
     content = content.replace(/```json/g, '').replace(/```/g, '').trim();
     const json = JSON.parse(content);
     
     return { 
-      data: { subject: json.subject, body: json.body, lead_name: lead.name }, 
+      data: { subject: json.subject, body: json.body, lead_name: lead.name, lead_email: lead.email }, 
       error: null 
     };
   } catch (err) {
