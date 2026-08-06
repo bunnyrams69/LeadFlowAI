@@ -7,7 +7,6 @@ import InstaScraper from './pages/InstaScraper';
 import EmailWriter from './pages/EmailWriter';
 import PostAutomation from './pages/PostAutomation';
 import RagChatbot from './pages/RagChatbot';
-import WhatsAppBot from './pages/WhatsAppBot';
 import { AppProvider } from './context/AppContext';
 import { ToastProvider } from './hooks/useToast';
 import Toast from './components/Toast';
@@ -39,7 +38,6 @@ function App() {
                   <Route path="/instagram" element={<InstaScraper />} />
                   <Route path="/email" element={<EmailWriter />} />
                   <Route path="/post" element={<PostAutomation />} />
-                  <Route path="/whatsapp" element={<WhatsAppBot />} />
                   <Route path="/chat" element={<RagChatbot />} />
                 </Routes>
               </PageTransition>

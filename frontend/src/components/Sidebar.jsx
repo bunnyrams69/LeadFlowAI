@@ -11,8 +11,7 @@ const Sidebar = () => {
       { path: '/linkedin', label: 'LinkedIn Scraper', icon: Briefcase },
       { path: '/instagram', label: 'Instagram Scraper', icon: Camera },
       { path: '/email', label: 'Email Writer', icon: Mail },
-      { path: '/post', label: 'Post Automation', icon: Share2 },
-      { path: '/whatsapp', label: 'WhatsApp Bot', icon: Phone }
+      { path: '/post', label: 'Post Automation', icon: Share2 }
     ]}
   ];
 
