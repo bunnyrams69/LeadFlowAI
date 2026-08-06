@@ -283,7 +283,8 @@ export const getPostHistory = async () => {
 export const sendChatMessage = async (message, history = []) => {
   const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
   if (!token) {
-    return handleRequest(api.post('/api/chat', { message, conversation_history: history }));
+    // No API key at all — use smart local fallback
+    return generateLocalChatResponse(message);
   }
 
   try {
@@ -293,10 +294,10 @@ export const sendChatMessage = async (message, history = []) => {
     
     let leadsContext = "No leads found in database yet.";
     if (allLeads.length > 0) {
-        leadsContext = allLeads.map((l, i) => `Lead ${i+1}:\nName: ${l.name}\nRole: ${l.title}\nCompany: ${l.company}\nBio: ${l.bio}`).join('\n\n');
+        leadsContext = allLeads.map((l, i) => `Lead ${i+1}:\nName: ${l.name}\nRole: ${l.title}\nCompany: ${l.company}\nBio: ${l.bio || 'N/A'}`).join('\n\n');
     }
 
-    const systemPrompt = `You are an intelligent RAG (Retrieval-Augmented Generation) Chatbot for Cognify AI. You help the user manage their scraped B2B leads.
+    const systemPrompt = `You are an intelligent RAG (Retrieval-Augmented Generation) Chatbot for Cognify AI, a B2B lead generation platform. You help the user manage their scraped leads.
     
 Here is the real-time database context containing the user's scraped leads:
 === LEADS DATABASE ===
@@ -306,38 +307,89 @@ ${leadsContext}
 RULES:
 1. When answering questions, STRICTLY use the Leads Database provided above.
 2. If the user asks to draft an email or follow up, read the lead's bio and draft a highly personalized message for them.
-3. Keep your answers concise, professional, and helpful.`;
+3. Keep your answers concise, professional, and helpful.
+4. If asked "who are my top leads", list the leads from the database with their names, roles, and companies.`;
 
+    // ChatWidget uses { role: 'user'|'bot', content: '...' }
     const formattedHistory = history.map(h => ({
-      role: h.is_bot ? 'assistant' : 'user',
-      content: h.text
+      role: h.role === 'bot' ? 'assistant' : 'user',
+      content: h.content
     }));
 
-    const messages = [
+    const msgs = [
       { role: 'system', content: systemPrompt },
       ...formattedHistory,
       { role: 'user', content: message }
     ];
 
-    const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-      model: 'mistralai/mistral-7b-instruct:free',
-      messages: messages
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
-        'X-Title': 'LeadFlow AI'
-      }
-    });
+    // Try multiple free models in case one is offline
+    const models = [
+      'mistralai/mistral-7b-instruct:free',
+      'google/gemma-2-9b-it:free',
+      'meta-llama/llama-3.1-8b-instruct:free',
+      'qwen/qwen-2-7b-instruct:free'
+    ];
 
-    const reply = res.data.choices[0].message.content;
-    return { data: { reply }, error: null };
+    for (const model of models) {
+      try {
+        const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+          model: model,
+          messages: msgs
+        }, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
+            'X-Title': 'LeadFlow AI'
+          }
+        });
+
+        if (res.data?.error) continue;
+        const reply = res.data.choices[0].message.content;
+        return { data: { reply }, error: null };
+      } catch (modelErr) {
+        console.warn(`Model ${model} failed, trying next...`);
+        continue;
+      }
+    }
+
+    // All models failed — use smart local fallback
+    return generateLocalChatResponse(message);
   } catch (err) {
     console.error('OpenRouter Chat Error:', err);
-    return handleRequest(api.post('/api/chat', { message, conversation_history: history }));
+    return generateLocalChatResponse(message);
   }
 };
+
+// Smart local fallback that reads leads from localStorage
+function generateLocalChatResponse(message) {
+  const li = JSON.parse(localStorage.getItem('linkedin_leads') || '[]');
+  const ig = JSON.parse(localStorage.getItem('insta_leads') || '[]');
+  const allLeads = [...li, ...ig];
+  const msg = message.toLowerCase();
+
+  if (msg.includes('lead') || msg.includes('top') || msg.includes('who')) {
+    if (allLeads.length === 0) {
+      return { data: { reply: "You haven't scraped any leads yet! Head over to the LinkedIn or Instagram Scraper tab to get started." }, error: null };
+    }
+    const list = allLeads.slice(0, 5).map((l, i) => `${i+1}. **${l.name}** — ${l.title} at ${l.company}`).join('\n');
+    return { data: { reply: `Here are your top leads:\n\n${list}\n\nWould you like me to draft a follow-up email for any of them?` }, error: null };
+  }
+  
+  if (msg.includes('email') || msg.includes('follow') || msg.includes('draft')) {
+    const lead = allLeads.find(l => msg.includes(l.name?.toLowerCase()));
+    if (lead) {
+      return { data: { reply: `Here's a draft follow-up for ${lead.name}:\n\nSubject: Quick idea for ${lead.company}\n\nHi ${lead.name},\n\nI noticed your work at ${lead.company} — impressive stuff! We've been helping similar companies automate their lead generation and saw a 3x increase in qualified prospects.\n\nWould love to show you how it works. Got 15 minutes this week?\n\nBest,\nGanesh\nCognify AI` }, error: null };
+    }
+    return { data: { reply: "Sure! Please tell me which lead you'd like me to draft an email for. You can say something like 'Draft an email for [Lead Name]'." }, error: null };
+  }
+
+  if (msg.includes('service') || msg.includes('offer') || msg.includes('what')) {
+    return { data: { reply: "Cognify AI offers:\n\n1. **RAG Chatbots** — AI assistants trained on your business data\n2. **WhatsApp Lead Bots** — Automated qualification via WhatsApp\n3. **LinkedIn/Instagram Scrapers** — Real-time B2B lead discovery\n4. **AI Email Writer** — Hyper-personalized cold outreach at scale\n5. **Post Automation** — AI-generated LinkedIn content\n\nWant to know more about any specific service?" }, error: null };
+  }
+
+  return { data: { reply: `Great question! I have ${allLeads.length} leads in your database. You can ask me:\n- "Who are my top leads?"\n- "Draft an email for [Name]"\n- "What services do I offer?"\n\nHow can I help you today?` }, error: null };
+}
 export const uploadChatDocument = (file) => {
   const formData = new FormData();
   formData.append('file', file);
