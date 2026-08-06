@@ -185,32 +185,56 @@ export const scrapeInstagram = async (query, maxPosts = 10) => {
 export const getInstagramLeads = () => handleRequest(api.get('/api/instagram/leads'));
 export const writeEmail = async (lead, productDesc, senderName) => {
   const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
+  const firstName = (lead.name || 'there').split(' ')[0];
+  const sender = senderName || 'Ganesh';
+
+  const defaultFallbackBody = `Hey ${firstName},\n\nNoticed your work leading ${lead.title || 'operations'} at ${lead.company} in ${lead.location || 'Hyderabad'}. Figured I'd reach out.\n\nI just finished building a custom AI agent for ${lead.company} that captures sales the moment buyers are ready and handles inbound leads.\n\nIt's ready for you. Reply and I will hand it over.\n\nBest,\n\n${sender}\n\nSent from my iPhone`;
+
   if (!token) {
-    return handleRequest(api.post('/api/email/write', { lead, product_description: productDesc, sender_name: senderName }));
+    return {
+      data: { subject: `${firstName} overview`, body: defaultFallbackBody, lead_name: lead.name, lead_email: lead.email },
+      error: null
+    };
   }
 
   try {
-    const prompt = `You are a master cold outreach copywriter who writes hyper-personalized, "stalker-level" cold emails that get high reply rates.
-Your goal is to make the recipient feel like you personally spent 30 minutes deeply researching their specific online presence, role, and location.
+    const prompt = `You are a world-class B2B cold email copywriter. Write a high-converting cold email following THIS EXACT STRUCTURE AND RULES.
 
-RECIPIENT LEAD PROFILE:
+PROSPECT INFO:
+- First Name: ${firstName}
 - Full Name: ${lead.name}
-- Email: ${lead.email || 'N/A'}
 - Title/Role: ${lead.title || 'Executive'}
 - Company: ${lead.company}
 - Location: ${lead.location || 'Hyderabad'}
-- Bio / Snippet Context: ${lead.bio || 'Active industry professional'}
+- Bio/Background Context: ${lead.bio || 'Active industry leader'}
 
-SENDER DETAILS:
-- Name: ${senderName || 'Ganesh'}
-- Product/Service Offer: ${productDesc || 'Cognify AI lead generation and automation platform'}
+SENDER NAME: ${sender}
+OFFER: ${productDesc || 'custom AI lead qualification agent'}
 
-INSTRUCTIONS FOR STALKER-LEVEL PERSONALIZATION:
-1. OPENING ICEBREAKER: Start immediately with a hyper-specific observation about them. Reference their exact title (${lead.title}), company (${lead.company}), location (${lead.location || 'Hyderabad'}), or details from their bio (${lead.bio}). Make them think: "Wow, this person actually researched me personally!"
-2. THE PITCH: Connect their specific background to how ${senderName}'s offer (${productDesc}) solves a major bottleneck for someone in their role at ${lead.company}.
-3. CALL TO ACTION: End with a smooth, low-friction request (e.g., "Are you open to a quick 3-minute chat this Thursday?").
-4. TONE: Direct, conversational, authentic. Under 90 words total. No generic templates or corporate jargon.
-5. FORMAT: Return ONLY a valid JSON object with keys "subject" and "body". Do NOT wrap in markdown codeblocks.`;
+REQUIRED EMAIL STRUCTURE:
+1. SUBJECT LINE: Must be mysterious & curiosity-driven e.g. "${firstName} overview" or "${firstName} your client"
+2. EMAIL BODY FORMAT:
+Hey ${firstName},
+
+[Insert stalking-level personalized icebreaker observing their specific role, company, location, or bio achievements]. Figured I'd reach out.
+
+I just finished building a custom AI agent for ${lead.company} that captures sales the moment buyers are ready and handles support.
+
+It's ready for you. Reply and I will hand it over.
+
+Best,
+
+${sender}
+
+Sent from my iPhone
+
+STRICT COPYWRITING RULES:
+- MUST BE UNDER 100 WORDS TOTAL.
+- NEVER introduce who you are at the start (NO "My name is...", NO "I am from...").
+- The personalization sentence MUST end with the exact words: "Figured I'd reach out."
+- The signature MUST end with "Sent from my iPhone" at the bottom.
+- No unsubscribe links, no pricing, text-only style.
+- Return ONLY a valid JSON object with keys "subject" and "body". Do NOT wrap in markdown codeblocks.`;
 
     const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
       model: 'mistralai/mistral-7b-instruct:free',
@@ -230,12 +254,15 @@ INSTRUCTIONS FOR STALKER-LEVEL PERSONALIZATION:
     const json = JSON.parse(content);
     
     return { 
-      data: { subject: json.subject, body: json.body, lead_name: lead.name, lead_email: lead.email }, 
+      data: { subject: json.subject || `${firstName} overview`, body: json.body || defaultFallbackBody, lead_name: lead.name, lead_email: lead.email }, 
       error: null 
     };
   } catch (err) {
     console.error('OpenRouter Email Error:', err);
-    return handleRequest(api.post('/api/email/write', { lead, product_description: productDesc, sender_name: senderName }));
+    return {
+      data: { subject: `${firstName} overview`, body: defaultFallbackBody, lead_name: lead.name, lead_email: lead.email },
+      error: null
+    };
   }
 };
 
