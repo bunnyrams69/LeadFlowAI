@@ -87,6 +87,7 @@ const ScraperLeadsTable = ({ leads, loading }) => {
         <thead style={{ backgroundColor: '#F9FAFB' }}>
           <tr>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Name</th>
+            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Source (Verify)</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Email (Target)</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Score</th>
             <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Location</th>
@@ -102,6 +103,15 @@ const ScraperLeadsTable = ({ leads, loading }) => {
             return (
               <tr key={i}>
                 <td style={{ fontWeight: 500 }}>{lead.name}</td>
+                <td>
+                  {lead.profile_url ? (
+                    <a href={lead.profile_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }} title="Verify Profile on LinkedIn">
+                      <span className={`tag tag-${sourceClass}`} style={{ cursor: 'pointer' }}>{lead.source} ↗</span>
+                    </a>
+                  ) : (
+                    <span className={`tag tag-${sourceClass}`}>{lead.source}</span>
+                  )}
+                </td>
                 <td>
                   <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: 500, fontFamily: 'monospace' }}>
                     {lead.email || `${lead.name.split(' ')[0].toLowerCase()}@company.com`}
