@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TopBar from '../components/TopBar';
-import { MessageCircle, Send, Phone, CheckCheck, Bot, User } from 'lucide-react';
+import { MessageCircle, Send, Phone, CheckCheck, Bot, User, Sparkles } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 
 const WhatsAppBot = () => {
   const { showToast } = useToast();
+  const chatEndRef = useRef(null);
 
   const [businessName, setBusinessName] = useState('Cognify AI');
   const [questions, setQuestions] = useState(
@@ -12,6 +13,8 @@ const WhatsAppBot = () => {
   );
   const [personality, setPersonality] = useState('Professional');
   const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [leadScore, setLeadScore] = useState(null);
 
   const [messages, setMessages] = useState([
     {
@@ -58,9 +61,14 @@ const WhatsAppBot = () => {
     },
   ]);
 
+  // Auto-scroll phone chat to bottom on new messages
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
   const handleSave = () => {
     if (showToast) {
-      showToast('WhatsApp Bot configuration saved successfully!', 'success');
+      showToast(`WhatsApp Bot configuration for "${businessName}" saved successfully!`, 'success');
     }
   };
 
@@ -68,29 +76,45 @@ const WhatsAppBot = () => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
+    const userText = inputMessage.trim();
     const newMsg = {
       id: Date.now(),
       sender: 'lead',
-      text: inputMessage,
+      text: userText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, newMsg]);
-    const userText = inputMessage;
     setInputMessage('');
+    setIsTyping(true);
 
-    // Simulate Bot Response
+    // Smart Bot AI Response Generator
     setTimeout(() => {
+      let botReply = `Thanks for your message! A representative from ${businessName} will follow up shortly.`;
+      const lower = userText.toLowerCase();
+
+      if (lower.includes('yes') || lower.includes('sure') || lower.includes('book') || lower.includes('demo') || lower.includes('schedule')) {
+        botReply = `Perfect! 📅 I've reserved a slot for you. A calendar invite has been sent to your email. We look forward to meeting you!`;
+        setLeadScore({ score: 96, label: 'HIGHLY QUALIFIED LEAD 🟢' });
+      } else if (lower.includes('budget') || lower.includes('$') || lower.includes('k') || lower.includes('cost') || lower.includes('price')) {
+        botReply = `Got it! That fits perfectly within our Growth Package. What is your target launch timeline?`;
+      } else if (lower.includes('week') || lower.includes('now') || lower.includes('month') || lower.includes('today') || lower.includes('soon')) {
+        botReply = `Great timeline! ⚡ Should I go ahead and book a 15-minute onboarding call with ${businessName}'s founder?`;
+      } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+        botReply = `Hello! 👋 How can ${businessName} assist you with lead generation today?`;
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           sender: 'bot',
-          text: `Thanks for your message! A representative from ${businessName} will follow up shortly.`,
+          text: botReply,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
-    }, 800);
+      setIsTyping(false);
+    }, 900);
   };
 
   return (
@@ -260,6 +284,49 @@ const WhatsAppBot = () => {
                   </div>
                 );
               })}
+
+              {isTyping && (
+                <div
+                  style={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0px 12px 12px 12px',
+                    padding: '8px 14px',
+                    fontSize: '11px',
+                    color: '#075E54',
+                    fontWeight: 600,
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Bot size={12} /> WhatsApp Bot is typing...
+                </div>
+              )}
+
+              {leadScore && (
+                <div style={{ textAlign: 'center', margin: '8px 0' }}>
+                  <span
+                    style={{
+                      backgroundColor: '#DCFCE7',
+                      color: '#166534',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '5px 12px',
+                      borderRadius: '12px',
+                      border: '1px solid #86EFAC',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Sparkles size={12} /> {leadScore.label} ({leadScore.score}/100)
+                  </span>
+                </div>
+              )}
+
+              <div ref={chatEndRef} />
             </div>
 
             {/* Input Bar */}
