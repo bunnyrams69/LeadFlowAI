@@ -182,7 +182,7 @@ export const scrapeInstagram = async (query, maxPosts = 10) => {
 };
 export const getInstagramLeads = () => handleRequest(api.get('/api/instagram/leads'));
 export const writeEmail = async (lead, productDesc, senderName) => {
-  const token = import.meta.env.VITE_OPENROUTER_KEY;
+  const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
   if (!token) {
     return handleRequest(api.post('/api/email/write', { lead, product_description: productDesc, sender_name: senderName }));
   }
@@ -239,7 +239,7 @@ RULES:
 };
 
 export const writeBulkEmails = async (leads, productDesc, senderName) => {
-  const token = import.meta.env.VITE_OPENROUTER_KEY;
+  const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
   if (!token) {
     return handleRequest(api.post('/api/email/write-bulk', leads.map(l => ({ lead: l, product_description: productDesc, sender_name: senderName }))));
   }
@@ -281,7 +281,7 @@ export const getPostHistory = async () => {
    }
 };
 export const sendChatMessage = async (message, history = []) => {
-  const token = import.meta.env.VITE_OPENROUTER_KEY;
+  const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
   if (!token) {
     return handleRequest(api.post('/api/chat', { message, conversation_history: history }));
   }
