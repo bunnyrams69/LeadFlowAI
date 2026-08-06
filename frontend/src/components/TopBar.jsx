@@ -2,15 +2,15 @@ import React from 'react';
 
 const TopBar = ({ title, subtitle, actionLabel, onAction, badge }) => {
   return (
-    <div style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '20px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="glass" style={{ background: 'rgba(255, 255, 255, 0.9)', borderBottom: '1px solid var(--border)', padding: '22px 36px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', sticky: 'top', zIndex: 10 }}>
       <div>
-        <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 600 }}>{title}</h1>
-        {subtitle && <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '14px' }}>{subtitle}</p>}
+        <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800, fontFamily: 'var(--font-display)', color: '#0F172A', letterSpacing: '-0.03em' }}>{title}</h1>
+        {subtitle && <p style={{ margin: '4px 0 0', color: '#64748B', fontSize: '13.5px', fontFamily: 'var(--font-body)', fontWeight: 500 }}>{subtitle}</p>}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         {badge && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#DCFCE7', color: '#166534', padding: '4px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 600 }}>
-            <span style={{ width: '8px', height: '8px', backgroundColor: '#22C55E', borderRadius: '50%' }}></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', padding: '5px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+            <span style={{ width: '8px', height: '8px', backgroundColor: '#22C55E', borderRadius: '50%', boxShadow: '0 0 8px #22C55E' }}></span>
             {badge}
           </div>
         )}
