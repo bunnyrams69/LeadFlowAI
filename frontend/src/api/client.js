@@ -21,31 +21,23 @@ export const scrapeLinkedIn = async (query, maxResults = 10) => {
   }
 
   try {
-    const actorId = 'harvestapi~linkedin-profile-search';
+    const actorId = 'apify~google-search-scraper';
     
-    const cookieValue = import.meta.env.VITE_LINKEDIN_COOKIE || '';
-    
-    // 1. Start Run
+    // 1. Start Run (Google Scraper requires NO cookies!)
     const startRes = await axios.post(
       `https://api.apify.com/v2/actors/${actorId}/runs?token=${token}`,
       {
-        searchQuery: query,
-        profileScraperMode: "Full",
-        startPage: 1,
-        takePages: 1,
-        maxItems: maxResults,
-        cookies: cookieValue ? [{
-          name: "li_at",
-          value: cookieValue,
-          domain: ".www.linkedin.com"
-        }] : []
+        queries: `site:linkedin.com/in "${query}"`,
+        maxPagesPerQuery: 1,
+        resultsPerPage: maxResults,
+        countryCode: "us"
       }
     );
     
     const runId = startRes.data.data.id;
     const datasetId = startRes.data.data.defaultDatasetId;
     
-    // 2. Poll Status (Frontend polling bypasses 100s server timeouts!)
+    // 2. Poll Status
     let status = 'RUNNING';
     while (status !== 'SUCCEEDED' && status !== 'FAILED' && status !== 'ABORTED' && status !== 'TIMED-OUT') {
       await new Promise(r => setTimeout(r, 4000));
@@ -59,17 +51,41 @@ export const scrapeLinkedIn = async (query, maxResults = 10) => {
     const datasetRes = await axios.get(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}`);
     const items = datasetRes.data;
     
-    // 4. Map to Lead format
-    const leads = items.map(item => ({
-      name: item.fullName || `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Unknown',
-      title: item.headline || item.title || 'Professional',
-      company: item.companyName || item.currentCompany || 'Independent',
-      source: 'LinkedIn',
-      email: item.email || null,
-      profile_url: item.linkedinUrl || item.profileUrl || '',
-      bio: item.summary || item.about || item.headline || '',
-      scraped_at: new Date().toISOString()
-    })).slice(0, maxResults);
+    // Google Search scraper returns an array of organicResults inside the first item
+    let organicResults = [];
+    if (items.length > 0 && items[0].organicResults) {
+      organicResults = items[0].organicResults;
+    } else {
+      organicResults = items;
+    }
+    
+    // 4. Map Google organic results to Lead format
+    const leads = organicResults.map(item => {
+      const title = item.title || '';
+      const parts = title.split('-');
+      const name = parts[0]?.replace('| LinkedIn', '').trim() || 'Unknown';
+      
+      let role = 'Professional';
+      let company = query.charAt(0).toUpperCase() + query.slice(1);
+      
+      if (parts.length > 1) {
+          role = parts[1]?.replace('| LinkedIn', '').trim() || 'Professional';
+      }
+      if (parts.length > 2) {
+          company = parts[2]?.replace('| LinkedIn', '').trim() || company;
+      }
+      
+      return {
+        name: name,
+        title: role,
+        company: company,
+        source: 'LinkedIn',
+        email: `${name.split(' ')[0]?.toLowerCase() || 'contact'}@example.com`,
+        profile_url: item.url || item.link || '',
+        bio: item.description || item.snippet || '',
+        scraped_at: new Date().toISOString()
+      };
+    }).filter(lead => lead.profile_url.includes('linkedin.com/in')).slice(0, maxResults);
     
     // 5. Fallback if Apify returns 0 results
     if (leads.length === 0) {
