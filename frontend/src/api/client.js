@@ -286,5 +286,34 @@ export const uploadChatDocument = (file) => {
   formData.append('file', file);
   return handleRequest(api.post('/api/chat/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }));
 };
-export const runPipeline = (query, source, productDesc, senderName, autoPost = false) => 
-  handleRequest(api.post('/api/pipeline/run', { query, source, product_description: productDesc, sender_name: senderName, auto_post: autoPost }));
+export const runPipeline = async (query, source, productDesc, senderName, autoPost) => {
+  try {
+     // 1. Scrape Leads
+     const scrapeRes = source === 'instagram' 
+        ? await scrapeInstagram(query, 5) 
+        : await scrapeLinkedIn(query, 5);
+        
+     if (scrapeRes.error) return { data: null, error: scrapeRes.error };
+     const leads = scrapeRes.data || [];
+     
+     // Save leads to local storage so they appear in the Dashboard table instantly
+     const storageKey = source === 'instagram' ? 'insta_leads' : 'linkedin_leads';
+     const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+     localStorage.setItem(storageKey, JSON.stringify([...leads, ...existing]));
+     
+     // 2. Write an email for the first lead (if any)
+     if (leads.length > 0) {
+        await writeEmail(leads[0], productDesc, senderName);
+     }
+     
+     // 3. Auto-post if requested
+     if (autoPost) {
+        const postContent = `Just automated lead generation for "${query}" using AI! Found ${leads.length} highly qualified prospects in seconds.\n\nIf you want this exact system for your business to scale client acquisition, drop a comment 👇`;
+        await publishPost(postContent);
+     }
+     
+     return { data: { message: "Pipeline completed successfully" }, error: null };
+  } catch (err) {
+     return { data: null, error: err.message };
+  }
+};
