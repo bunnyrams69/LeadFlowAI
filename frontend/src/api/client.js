@@ -280,7 +280,64 @@ export const getPostHistory = async () => {
       return { data: null, error: err.message };
    }
 };
-export const sendChatMessage = (message, history = []) => handleRequest(api.post('/api/chat', { message, conversation_history: history }));
+export const sendChatMessage = async (message, history = []) => {
+  const token = import.meta.env.VITE_OPENROUTER_KEY;
+  if (!token) {
+    return handleRequest(api.post('/api/chat', { message, conversation_history: history }));
+  }
+
+  try {
+    const li = JSON.parse(localStorage.getItem('linkedin_leads') || '[]');
+    const ig = JSON.parse(localStorage.getItem('insta_leads') || '[]');
+    const allLeads = [...li, ...ig].slice(0, 30); 
+    
+    let leadsContext = "No leads found in database yet.";
+    if (allLeads.length > 0) {
+        leadsContext = allLeads.map((l, i) => `Lead ${i+1}:\nName: ${l.name}\nRole: ${l.title}\nCompany: ${l.company}\nBio: ${l.bio}`).join('\n\n');
+    }
+
+    const systemPrompt = `You are an intelligent RAG (Retrieval-Augmented Generation) Chatbot for Cognify AI. You help the user manage their scraped B2B leads.
+    
+Here is the real-time database context containing the user's scraped leads:
+=== LEADS DATABASE ===
+${leadsContext}
+======================
+    
+RULES:
+1. When answering questions, STRICTLY use the Leads Database provided above.
+2. If the user asks to draft an email or follow up, read the lead's bio and draft a highly personalized message for them.
+3. Keep your answers concise, professional, and helpful.`;
+
+    const formattedHistory = history.map(h => ({
+      role: h.is_bot ? 'assistant' : 'user',
+      content: h.text
+    }));
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...formattedHistory,
+      { role: 'user', content: message }
+    ];
+
+    const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+      model: 'mistralai/mistral-7b-instruct:free',
+      messages: messages
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
+        'X-Title': 'LeadFlow AI'
+      }
+    });
+
+    const reply = res.data.choices[0].message.content;
+    return { data: { reply }, error: null };
+  } catch (err) {
+    console.error('OpenRouter Chat Error:', err);
+    return handleRequest(api.post('/api/chat', { message, conversation_history: history }));
+  }
+};
 export const uploadChatDocument = (file) => {
   const formData = new FormData();
   formData.append('file', file);
