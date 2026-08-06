@@ -34,7 +34,7 @@ const LinkedInScraper = () => {
     setIsLoading(false);
     
     if (res.error) {
-       showToast('Scrape failed — check your LinkedIn credentials in .env', 'error');
+       showToast(`Scrape failed: ${res.error}`, 'error');
        return;
     }
     
