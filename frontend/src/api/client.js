@@ -23,6 +23,8 @@ export const scrapeLinkedIn = async (query, maxResults = 10) => {
   try {
     const actorId = 'harvestapi/linkedin-profile-search';
     
+    const cookieValue = import.meta.env.VITE_LINKEDIN_COOKIE || '';
+    
     // 1. Start Run
     const startRes = await axios.post(
       `https://api.apify.com/v2/actors/${actorId}/runs?token=${token}`,
@@ -31,7 +33,12 @@ export const scrapeLinkedIn = async (query, maxResults = 10) => {
         profileScraperMode: "Full",
         startPage: 1,
         takePages: 1,
-        maxItems: maxResults
+        maxItems: maxResults,
+        cookies: cookieValue ? [{
+          name: "li_at",
+          value: cookieValue,
+          domain: ".www.linkedin.com"
+        }] : []
       }
     );
     
