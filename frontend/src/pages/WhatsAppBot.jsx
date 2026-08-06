@@ -90,16 +90,23 @@ const WhatsAppBot = () => {
 
     // Smart Bot AI Response Generator
     setTimeout(() => {
-      let botReply = `Thanks for your message! A representative from ${businessName} will follow up shortly.`;
+      let botReply = `Thanks for reaching out! A specialist from ${businessName} will follow up shortly to help you scale your outreach.`;
       const lower = userText.toLowerCase();
 
-      if (lower.includes('yes') || lower.includes('sure') || lower.includes('book') || lower.includes('demo') || lower.includes('schedule')) {
-        botReply = `Perfect! 📅 I've reserved a slot for you. A calendar invite has been sent to your email. We look forward to meeting you!`;
-        setLeadScore({ score: 96, label: 'HIGHLY QUALIFIED LEAD 🟢' });
-      } else if (lower.includes('budget') || lower.includes('$') || lower.includes('k') || lower.includes('cost') || lower.includes('price')) {
-        botReply = `Got it! That fits perfectly within our Growth Package. What is your target launch timeline?`;
+      if (lower.includes('lead') || lower.includes('hot') || lower.includes('prospect') || lower.includes('top')) {
+        botReply = `Yes! 🎯 We currently have 47 high-intent leads qualified in your pipeline (Scores 90+), including top decision-makers in Real Estate, Dental Clinics, and Tech. Would you like to schedule a 15-minute demo to see them?`;
+        setLeadScore({ score: 94, label: 'HIGH-INTENT LEAD DISCOVERED 🟢' });
+      } else if (lower.includes('yes') || lower.includes('sure') || lower.includes('book') || lower.includes('demo') || lower.includes('schedule')) {
+        botReply = `Perfect! 📅 I've reserved a demo slot for you. A calendar invite has been sent to your email. We look forward to meeting you!`;
+        setLeadScore({ score: 98, label: 'HIGHLY QUALIFIED LEAD 🟢' });
+      } else if (lower.includes('budget') || lower.includes('$') || lower.includes('k') || lower.includes('cost') || lower.includes('price') || lower.includes('rate') || lower.includes('fee')) {
+        botReply = `Our packages are flexible! We offer a free tier (50 leads/month) and Pro plans starting at ₹999/month. What is your estimated monthly budget?`;
       } else if (lower.includes('week') || lower.includes('now') || lower.includes('month') || lower.includes('today') || lower.includes('soon')) {
         botReply = `Great timeline! ⚡ Should I go ahead and book a 15-minute onboarding call with ${businessName}'s founder?`;
+      } else if (lower.includes('service') || lower.includes('what') || lower.includes('do') || lower.includes('offer') || lower.includes('help')) {
+        botReply = `Cognify AI automates your entire sales funnel: 1. Real-time Lead Scraping, 2. AI Cold Emails, 3. WhatsApp Qualification, 4. Post Automation. Which service interests you?`;
+      } else if (lower.includes('who') || lower.includes('founder') || lower.includes('ganesh') || lower.includes('cognify')) {
+        botReply = `Cognify AI is an applied AI automation studio based in Hyderabad, founded by Ganesh to help businesses scale client acquisition 3x faster using GenAI!`;
       } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
         botReply = `Hello! 👋 How can ${businessName} assist you with lead generation today?`;
       }
@@ -114,7 +121,7 @@ const WhatsAppBot = () => {
         },
       ]);
       setIsTyping(false);
-    }, 900);
+    }, 800);
   };
 
   return (
