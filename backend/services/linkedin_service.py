@@ -85,7 +85,7 @@ def scrape_linkedin(req: LinkedInScrapeRequest) -> List[Lead]:
                 "company": company,
                 "source": "LinkedIn",
                 "email": f"{fn.lower()}.{ln.lower()}@{company.replace(' ', '').lower()}.com",
-                "profile_url": f"https://linkedin.com/in/{fn.lower()}{ln.lower()}{random.randint(100,999)}",
+                "profile_url": f"https://www.linkedin.com/search/results/people/?keywords={urllib.parse.quote(query)}",
                 "bio": f"Experienced {role} at {company}. Passionate about providing top-tier {query.lower()} services. 10+ years of industry experience.",
                 "scraped_at": now
             })
