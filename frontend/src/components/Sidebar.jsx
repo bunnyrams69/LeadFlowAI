@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Camera, Mail, Share2, MessageSquare, Zap, Clapperboard } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Camera, Mail, Share2, MessageSquare, Zap, Clapperboard, HelpCircle } from 'lucide-react';
 
 const Sidebar = () => {
   const docsCount = parseInt(localStorage.getItem('rag_docs_count') || '0');
@@ -17,8 +17,9 @@ const Sidebar = () => {
   ];
 
   const aiItems = [
-    { section: 'AI', items: [
-      { path: '/chat', label: 'RAG Chatbot', icon: MessageSquare, hasDocs: docsCount > 0 }
+    { section: 'RESOURCES', items: [
+      { path: '/chat', label: 'RAG Chatbot', icon: MessageSquare, hasDocs: docsCount > 0 },
+      { path: '/faq', label: 'Hackathon & FAQ', icon: HelpCircle }
     ]}
   ];
 

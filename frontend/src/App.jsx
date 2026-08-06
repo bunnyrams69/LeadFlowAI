@@ -8,6 +8,7 @@ import EmailWriter from './pages/EmailWriter';
 import PostAutomation from './pages/PostAutomation';
 import RagChatbot from './pages/RagChatbot';
 import ContentStudio from './pages/ContentStudio';
+import HackathonFaq from './pages/HackathonFaq';
 import { AppProvider } from './context/AppContext';
 import { ToastProvider } from './hooks/useToast';
 import Toast from './components/Toast';
@@ -41,6 +42,7 @@ function App() {
                   <Route path="/post" element={<PostAutomation />} />
                   <Route path="/studio" element={<ContentStudio />} />
                   <Route path="/chat" element={<RagChatbot />} />
+                  <Route path="/faq" element={<HackathonFaq />} />
                 </Routes>
               </PageTransition>
             </div>
