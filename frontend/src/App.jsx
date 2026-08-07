@@ -10,6 +10,7 @@ import EmailWriter from './pages/EmailWriter';
 import PostAutomation from './pages/PostAutomation';
 import RagChatbot from './pages/RagChatbot';
 import ContentStudio from './pages/ContentStudio';
+import ConversionAnalytics from './pages/ConversionAnalytics';
 import HackathonFaq from './pages/HackathonFaq';
 import { AppProvider } from './context/AppContext';
 import { ToastProvider } from './hooks/useToast';
@@ -45,6 +46,7 @@ function App() {
                   <Route path="/email" element={<EmailWriter />} />
                   <Route path="/post" element={<PostAutomation />} />
                   <Route path="/studio" element={<ContentStudio />} />
+                  <Route path="/analytics" element={<ConversionAnalytics />} />
                   <Route path="/chat" element={<RagChatbot />} />
                   <Route path="/faq" element={<HackathonFaq />} />
                 </Routes>

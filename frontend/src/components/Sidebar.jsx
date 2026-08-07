@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Camera, Users, AtSign, Mail, Share2, MessageSquare, Zap, Clapperboard, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Camera, Users, AtSign, Mail, Share2, MessageSquare, Zap, Clapperboard, HelpCircle, BarChart3 } from 'lucide-react';
 
 const Sidebar = () => {
   const docsCount = parseInt(localStorage.getItem('rag_docs_count') || '0');
@@ -14,7 +14,8 @@ const Sidebar = () => {
       { path: '/threads', label: 'Threads Leads', icon: AtSign },
       { path: '/email', label: 'Email Writer', icon: Mail },
       { path: '/post', label: 'Post Automation', icon: Share2 },
-      { path: '/studio', label: 'Content Studio', icon: Clapperboard }
+      { path: '/studio', label: 'Content Studio', icon: Clapperboard },
+      { path: '/analytics', label: 'A/B Testing & Analytics', icon: BarChart3 }
     ]}
   ];
 
