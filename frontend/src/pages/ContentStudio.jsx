@@ -98,17 +98,21 @@ const ContentStudio = () => {
   const [copiedIdx, setCopiedIdx] = useState(-1);
 
   // --- HANDLERS ---
-  const handleGenerateThumbnails = async () => {
-    if (!thumbIdea) {
+  const handleGenerateThumbnails = async (overrideIdea) => {
+    const topicToUse = typeof overrideIdea === 'string' ? overrideIdea : thumbIdea;
+    if (!topicToUse) {
       showToast('Enter a video idea', 'warning');
       return;
+    }
+    if (typeof overrideIdea === 'string') {
+      setThumbIdea(overrideIdea);
     }
     setThumbLoading(true);
 
     const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
     if (token) {
       try {
-        const prompt = `You are a YouTube thumbnail strategist. Generate 3 distinct high-CTR thumbnail concepts for this video topic: "${thumbIdea}". Available assets: "${thumbAssets || 'host face, laptop'}".
+        const prompt = `You are a YouTube thumbnail strategist. Generate 3 distinct high-CTR thumbnail concepts for this video topic: "${topicToUse}". Available assets: "${thumbAssets || 'host face, laptop'}".
 Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"), "name", "register" (e.g. "CURIOSITY & FOMO ⚡"), "attraction", "headline", "accent", "face", "giants", "subject", "environment", "vfx". Do NOT use markdown wrappers.`;
 
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -132,7 +136,7 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
           if (Array.isArray(parsed) && parsed.length > 0) {
             setResults(parsed);
             setThumbLoading(false);
-            showToast(`Generated 3 AI Thumbnail Concepts for "${thumbIdea.slice(0, 30)}..."!`, 'success');
+            showToast(`Generated 3 AI Thumbnail Concepts for "${topicToUse.slice(0, 30)}..."!`, 'success');
             return;
           }
         }
@@ -141,16 +145,16 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
       }
     }
 
-    // Dynamic Fallback Generator tailored to thumbIdea
+    // Dynamic Fallback Generator tailored to topicToUse
     setTimeout(() => {
-      const topic = thumbIdea.toUpperCase();
+      const topic = topicToUse.toUpperCase();
       const mainWord = topic.split(' ')[0] || 'AI';
       setResults([
         {
           id: 'CONCEPT #1',
-          name: `The Secret ${thumbIdea.slice(0, 25)} Blueprint`,
+          name: `The Secret ${topicToUse.slice(0, 25)} Blueprint`,
           register: 'CURIOSITY & FOMO ⚡',
-          attraction: `High contrast visual highlighting secrets behind ${thumbIdea}.`,
+          attraction: `High contrast visual highlighting secrets behind ${topicToUse}.`,
           headline: `THE ${mainWord} REVOLUTION`,
           accent: mainWord,
           face: 'Surprised smirk cutout on the right side pointing left',
@@ -187,8 +191,15 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
         }
       ]);
       setThumbLoading(false);
-      showToast(`Generated 3 Thumbnail Concepts for "${thumbIdea.slice(0, 25)}..."!`, 'success');
+      showToast(`Generated 3 Thumbnail Concepts for "${topicToUse.slice(0, 25)}..."!`, 'success');
     }, 1000);
+  };
+
+  const handleSendToThumbnail = (title) => {
+    setActiveTab('thumbnail');
+    setThumbIdea(title);
+    showToast(`Generating Thumbnail Concepts for: "${title.slice(0, 30)}..."`, 'info');
+    handleGenerateThumbnails(title);
   };
 
   const handleAnalyzeReels = async () => {
@@ -360,9 +371,9 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
                   />
                 </div>
               </div>
-              <button className="btn-blue" style={{ alignSelf: 'flex-start' }} onClick={handleGenerateThumbnails} disabled={thumbLoading}>
+              <button className="btn-blue" style={{ alignSelf: 'flex-start' }} onClick={() => handleGenerateThumbnails()} disabled={thumbLoading}>
                 {thumbLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                {thumbLoading ? 'Designing Concepts...' : 'Generate 20 Thumbnail Concepts'}
+                {thumbLoading ? 'Designing Concepts...' : 'Generate 3 Thumbnail Concepts'}
               </button>
             </div>
 
@@ -600,23 +611,40 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
                             <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', fontStyle: 'italic' }}>💡 {o.why_outlier}</div>
                           </div>
                         </div>
-                        <button 
-                          className="btn-demo" 
-                          onClick={() => copyToClipboard(`TITLE: ${o.outlier_title}\n\nSCRIPT:\n${o.script}\n\nAI TIPS:\n${o.ai_tips}\n\nKEYWORDS: ${(o.keywords || []).join(', ')}\n\nDESCRIPTION:\n${o.description}`, 100 + idx)}
-                          style={{ whiteSpace: 'nowrap' }}
-                        >
-                          {copiedIdx === 100 + idx ? <Check size={14} color="#166534" /> : <Copy size={14} />}
-                          {copiedIdx === 100 + idx ? 'Copied!' : 'Copy All'}
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button 
+                            className="btn-blue" 
+                            onClick={() => handleSendToThumbnail(o.outlier_title)}
+                            style={{ whiteSpace: 'nowrap', padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            <ImageIcon size={14} /> Generate 3 Thumbnails
+                          </button>
+                          <button 
+                            className="btn-demo" 
+                            onClick={() => copyToClipboard(`TITLE: ${o.outlier_title}\n\nSCRIPT:\n${o.script}\n\nAI TIPS:\n${o.ai_tips}\n\nKEYWORDS: ${(o.keywords || []).join(', ')}\n\nDESCRIPTION:\n${o.description}`, 100 + idx)}
+                            style={{ whiteSpace: 'nowrap' }}
+                          >
+                            {copiedIdx === 100 + idx ? <Check size={14} color="#166534" /> : <Copy size={14} />}
+                            {copiedIdx === 100 + idx ? 'Copied!' : 'Copy All'}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Card Body */}
                       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
                         {/* 1. TITLE */}
-                        <div style={{ backgroundColor: accentColors.bg, padding: '14px 18px', borderRadius: '12px', border: `1px solid ${accentColors.border}30` }}>
-                          <div style={{ fontSize: '11px', fontWeight: 800, color: accentColors.text, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> Optimized Title</div>
-                          <div style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>{o.outlier_title}</div>
+                        <div style={{ backgroundColor: accentColors.bg, padding: '14px 18px', borderRadius: '12px', border: `1px solid ${accentColors.border}30`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                          <div>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: accentColors.text, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> Optimized Title</div>
+                            <div style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>{o.outlier_title}</div>
+                          </div>
+                          <button
+                            onClick={() => handleSendToThumbnail(o.outlier_title)}
+                            style={{ background: 'none', border: `1px solid ${accentColors.border}`, borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, color: accentColors.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            <Sparkles size={13} /> Generate Thumbnail Concepts →
+                          </button>
                         </div>
 
                         {/* 2. SCRIPT */}
