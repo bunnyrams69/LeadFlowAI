@@ -64,24 +64,28 @@ const ContentStudio = () => {
   const [reelsData, setReelsData] = useState([
     {
       id: 1,
+      title: 'Building a $3K AI WhatsApp Bot for Dental Clinics',
       views: '142,500',
       likes: '12,840',
       comments: '1,420',
       engagement: '10.2%',
       hook: '"Stop building $500 websites in 2026. Build THIS $3,000 AI Bot instead..."',
+      caption: 'Stop building $500 websites in 2026. Build THIS $3,000 AI Bot instead...\n\nI just built a WhatsApp qualification bot for a dental clinic in Hyderabad. It books 14 appointments on complete autopilot.\n\nNo receptionist. No missed calls. Just AI working 24/7.\n\nComment \'BOT\' and I will send you the full n8n automation blueprint.\n\n#aiautomation #aiagency #b2bleads #cognifyai #saas',
       cta: '"Comment \'BOT\' and I will send you the full n8n automation blueprint."',
-      summary: 'Demonstrates a live WhatsApp qualification bot built for a dental clinic, showing how it books 14 appointments on autopilot.',
+      summary: 'Demonstrates a live WhatsApp qualification bot built for a dental clinic, showing how it books 14 appointments on autopilot. Uses curiosity-driven hook and direct comment CTA.',
       hashtags: ['aiautomation', 'aiagency', 'b2bleads', 'cognifyai', 'saas']
     },
     {
       id: 2,
+      title: 'Replacing a 3-Person Sales Team with Python',
       views: '98,200',
       likes: '8,410',
       comments: '910',
       engagement: '9.4%',
       hook: '"I replaced a 3-person sales team with a 10-line Python script. Here is how..."',
+      caption: 'I replaced a 3-person sales team with a 10-line Python script. Here is how...\n\nStep 1: Scrape LinkedIn decision-makers using location-targeted search\nStep 2: Feed them into an OpenRouter cold email generator\nStep 3: Watch qualified replies land in your inbox\n\nLink in bio for the free source code and setup guide.\n\n#python #aiagent #leadgeneration #growthhacking',
       cta: '"Link in bio for the free source code and setup guide."',
-      summary: 'Walks through scraping LinkedIn decision-makers and feeding them directly into an OpenRouter cold email generator.',
+      summary: 'Walks through scraping LinkedIn decision-makers and feeding them directly into an OpenRouter cold email generator. Step-by-step format builds credibility.',
       hashtags: ['python', 'aiagent', 'leadgeneration', 'growthhacking']
     }
   ]);
@@ -476,43 +480,85 @@ Return ONLY a valid JSON object with keys: "title", "hook_visual", "hook_verbal"
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {reelsData.map((r, idx) => (
-                <div key={idx} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
-                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Play size={16} color="#2563EB" /> Reel #{r.id} Analysis — @{reelUsername.replace('@', '')}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {reelsData.map((r, idx) => {
+                return (
+                <div key={idx} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0', padding: '0', overflow: 'hidden', borderTop: `4px solid ${idx === 0 ? '#6366F1' : idx === 1 ? '#06B6D4' : '#F59E0B'}` }}>
+                  
+                  {/* HEADER: Reel Title + Interactions */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid var(--border)', backgroundColor: '#FAFBFC' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '10px', backgroundColor: idx === 0 ? '#EEF2FF' : idx === 1 ? '#ECFEFF' : '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Play size={16} color={idx === 0 ? '#6366F1' : idx === 1 ? '#06B6D4' : '#F59E0B'} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '15px', fontFamily: 'var(--font-display)', color: '#0F172A' }}>
+                          {r.title || `Reel #${r.id}`}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94A3B8', fontFamily: 'var(--font-mono)' }}>@{reelUsername.replace('@', '')} • Reel #{r.id}</div>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#64748B', fontWeight: 500 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Eye size={14} /> {r.views}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ThumbsUp size={14} /> {r.likes}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageSquare size={14} /> {r.comments}</span>
-                      <span style={{ backgroundColor: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 }}>{r.engagement} ER</span>
+                    
+                    {/* Interactions Bar */}
+                    <div style={{ display: 'flex', gap: '14px', fontSize: '13px', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#475569' }}><Eye size={15} color="#6366F1" /> {r.views}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#475569' }}><ThumbsUp size={15} color="#06B6D4" /> {r.likes}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#475569' }}><MessageSquare size={15} color="#F59E0B" /> {r.comments}</span>
+                      <span style={{ backgroundColor: '#DCFCE7', color: '#15803D', padding: '3px 10px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, border: '1px solid #86EFAC' }}>{r.engagement} ER</span>
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                    <div style={{ backgroundColor: '#EFF6FF', padding: '14px', borderRadius: '8px', border: '1px solid #BFDBFE' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#1E40AF', textTransform: 'uppercase', marginBottom: '4px' }}>🪝 Scroll-Stopping Hook</div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', fontStyle: 'italic' }}>{r.hook}</div>
-                    </div>
-                    <div style={{ backgroundColor: '#FEF3C7', padding: '14px', borderRadius: '8px', border: '1px solid #FDE68A' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', marginBottom: '4px' }}>📢 Call to Action (CTA)</div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>{r.cta}</div>
-                    </div>
-                  </div>
+                  {/* BODY: Hook + Caption + CTA */}
+                  <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-                  <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5, marginTop: '4px' }}>
-                    <strong>📝 Strategy Summary:</strong> {r.summary}
-                  </div>
+                    {/* Hook Line */}
+                    <div style={{ backgroundColor: '#EEF2FF', padding: '16px', borderRadius: '12px', border: '1px solid #C7D2FE' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 800, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontFamily: 'var(--font-mono)' }}>🪝 Hook Line</div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#1E293B', fontStyle: 'italic', lineHeight: 1.5 }}>{r.hook}</div>
+                    </div>
 
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                    {r.hashtags.map((h, i) => (
-                      <span key={i} style={{ fontSize: '11px', backgroundColor: '#F1F5F9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontWeight: 500 }}>#{h}</span>
-                    ))}
+                    {/* Full Caption */}
+                    <div style={{ backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontFamily: 'var(--font-mono)' }}>📝 Full Caption</div>
+                      <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: 1.65, whiteSpace: 'pre-wrap', maxHeight: r._expanded ? 'none' : '120px', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
+                        {r.caption || r.summary}
+                      </div>
+                      {(r.caption && r.caption.length > 200) && (
+                        <button 
+                          onClick={() => {
+                            const updated = [...reelsData];
+                            updated[idx] = { ...updated[idx], _expanded: !updated[idx]._expanded };
+                            setReelsData(updated);
+                          }}
+                          style={{ marginTop: '8px', background: 'none', border: '1px solid #C7D2FE', borderRadius: '8px', padding: '4px 12px', fontSize: '12px', fontWeight: 600, color: '#6366F1', cursor: 'pointer' }}
+                        >
+                          {r._expanded ? 'Show Less ▲' : 'Show Full Caption ▼'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* CTA + Strategy Summary side by side */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                      <div style={{ backgroundColor: '#FFFBEB', padding: '16px', borderRadius: '12px', border: '1px solid #FDE68A' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#B45309', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontFamily: 'var(--font-mono)' }}>📢 Call to Action (CTA)</div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>{r.cta}</div>
+                      </div>
+                      <div style={{ backgroundColor: '#F0FDF4', padding: '16px', borderRadius: '12px', border: '1px solid #BBF7D0' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontFamily: 'var(--font-mono)' }}>🧠 Strategy Summary</div>
+                        <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: 1.5 }}>{r.summary}</div>
+                      </div>
+                    </div>
+
+                    {/* Hashtags */}
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {(r.hashtags || []).map((h, i) => (
+                        <span key={i} style={{ fontSize: '11px', backgroundColor: '#EEF2FF', color: '#4F46E5', padding: '3px 10px', borderRadius: '8px', fontWeight: 600, fontFamily: 'var(--font-mono)', border: '1px solid #C7D2FE' }}>#{h}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

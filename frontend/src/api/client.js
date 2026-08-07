@@ -464,14 +464,14 @@ export const scrapeAndAnalyzeInstagramReels = async (username) => {
     return { data: null, error: "Apify API Token is missing! Please enter your Apify token in the settings." };
   }
 
-  // Step 1: Run Apify Instagram Post / Reel Scraper Actor
+  // Step 1: Run Apify Instagram Post / Reel Scraper Actor (limit to 3 latest)
   try {
     const actorId = 'apify~instagram-post-scraper';
     const startRes = await axios.post(
       `https://api.apify.com/v2/actors/${actorId}/runs?token=${token}`,
       {
         username: [cleanUser],
-        resultsLimit: 5
+        resultsLimit: 3
       }
     );
 
@@ -480,8 +480,8 @@ export const scrapeAndAnalyzeInstagramReels = async (username) => {
 
     let status = 'RUNNING';
     let attempts = 0;
-    while (status !== 'SUCCEEDED' && status !== 'FAILED' && status !== 'ABORTED' && status !== 'TIMED-OUT' && attempts < 10) {
-      await new Promise(r => setTimeout(r, 2000));
+    while (status !== 'SUCCEEDED' && status !== 'FAILED' && status !== 'ABORTED' && status !== 'TIMED-OUT' && attempts < 15) {
+      await new Promise(r => setTimeout(r, 2500));
       const statusRes = await axios.get(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`);
       status = statusRes.data.data.status;
       attempts++;
@@ -491,12 +491,13 @@ export const scrapeAndAnalyzeInstagramReels = async (username) => {
       const datasetRes = await axios.get(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}`);
       const items = datasetRes.data || [];
       
-      realReels = items.map(item => ({
+      realReels = items.slice(0, 3).map(item => ({
         caption: item.caption || item.text || item.description || '',
-        likes: item.likesCount || item.likes || Math.floor(Math.random() * 5000) + 1000,
-        comments: item.commentsCount || item.comments || Math.floor(Math.random() * 400) + 50,
-        views: item.videoPlayCount || item.videoViewCount || item.views || Math.floor(Math.random() * 80000) + 10000,
-        url: item.url || item.displayUrl || `https://instagram.com/${cleanUser}`
+        likes: item.likesCount || item.likes || 0,
+        comments: item.commentsCount || item.comments || 0,
+        views: item.videoPlayCount || item.videoViewCount || item.views || 0,
+        url: item.url || item.displayUrl || `https://instagram.com/${cleanUser}`,
+        timestamp: item.timestamp || item.takenAtTimestamp || ''
       })).filter(r => r.caption);
     }
   } catch (err) {
@@ -535,11 +536,12 @@ export const scrapeAndAnalyzeInstagramReels = async (username) => {
         
         realReels = items
           .filter(item => item.url?.includes('instagram.com'))
+          .slice(0, 3)
           .map(item => ({
             caption: `${item.title || ''} - ${item.snippet || item.description || ''}`,
-            likes: Math.floor(Math.random() * 5000) + 1200,
-            comments: Math.floor(Math.random() * 300) + 80,
-            views: Math.floor(Math.random() * 90000) + 15000,
+            likes: 0,
+            comments: 0,
+            views: 0,
             url: item.url || ''
           }));
       }
@@ -552,24 +554,37 @@ export const scrapeAndAnalyzeInstagramReels = async (username) => {
     return { data: null, error: `Could not scrape Instagram profile @${cleanUser}. Please check if the account is public and your Apify token is valid.` };
   }
 
-  // Step 2: Pass REAL Scraped Instagram Captions to OpenRouter AI to extract Hooks, CTAs & Summaries
+  // Step 2: Pass REAL Scraped Instagram Captions to OpenRouter AI for deep per-reel analysis
   if (openrouterKey) {
     try {
-      const prompt = `You are a social media analyst. Here are REAL scraped Instagram captions for user @${cleanUser}:
-${JSON.stringify(realReels.map(r => r.caption), null, 2)}
+      const reelCaptionsForAI = realReels.map((r, i) => ({
+        reel_number: i + 1,
+        full_caption: r.caption,
+        scraped_views: r.views,
+        scraped_likes: r.likes,
+        scraped_comments: r.comments
+      }));
 
-For each reel, extract/analyze the content and return ONLY a valid JSON array of objects with EXACT keys:
-- "id": number (1, 2, 3...)
-- "views": string (formatted number e.g. "${realReels[0]?.views?.toLocaleString() || '142,500'}")
-- "likes": string (formatted number e.g. "${realReels[0]?.likes?.toLocaleString() || '12,840'}")
-- "comments": string (formatted number e.g. "${realReels[0]?.comments?.toLocaleString() || '1,420'}")
-- "engagement": string (calculated engagement percentage e.g. "10.2%")
-- "hook": string (The exact scroll-stopping opening line in quotes)
-- "cta": string (The exact Call to Action in quotes)
-- "summary": string (1-sentence breakdown of what the reel was about)
-- "hashtags": array of 5 strings (without '#')
+      const prompt = `You are a professional Instagram Reels content strategist. Below are ${realReels.length} REAL scraped Instagram reels/posts for the account @${cleanUser}.
 
-Return ONLY the raw JSON array with NO markdown backticks or commentary.`;
+SCRAPED DATA:
+${JSON.stringify(reelCaptionsForAI, null, 2)}
+
+Analyze each reel INDIVIDUALLY and return ONLY a valid JSON array (no markdown, no commentary) of exactly ${realReels.length} objects. Each object must have these EXACT keys:
+- "id": number (1, 2, 3)
+- "title": string (a short descriptive title summarizing what this specific reel is about, max 12 words)
+- "hook": string (the exact scroll-stopping opening line from this reel's caption, in quotes. Extract the REAL first sentence.)
+- "caption": string (the full original caption text, exactly as scraped — do NOT modify or shorten it)
+- "cta": string (the exact call-to-action from this reel. If no explicit CTA exists, write "No explicit CTA found")
+- "views": string (use the scraped number, formatted with commas, e.g. "142,500". If 0, estimate based on the account size)
+- "likes": string (use the scraped number, formatted with commas. If 0, estimate)
+- "comments": string (use the scraped number, formatted with commas. If 0, estimate)
+- "engagement": string (calculate: (likes + comments) / views * 100, format as "X.X%")
+- "summary": string (1-2 sentence analysis of the reel's content strategy and why it works or doesn't)
+- "hashtags": array of up to 5 strings (extract real hashtags from the caption, without '#'. If none exist, suggest relevant ones)
+
+CRITICAL: Each reel MUST have DIFFERENT and UNIQUE analysis. Do NOT copy the same hook/cta/summary across reels.
+Return ONLY the raw JSON array.`;
 
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -598,23 +613,35 @@ Return ONLY the raw JSON array with NO markdown backticks or commentary.`;
     }
   }
 
-  // Fallback if OpenRouter AI is offline: Parse the real scraped captions locally
+  // Fallback if OpenRouter AI is offline: Parse real scraped captions locally with per-reel distinct analysis
   const formatted = realReels.slice(0, 3).map((item, idx) => {
     const lines = item.caption.split('\n').filter(l => l.trim());
-    const firstLine = lines[0] || item.caption.slice(0, 60);
+    const firstLine = lines[0] || item.caption.slice(0, 80);
     const hashtagsMatch = item.caption.match(/#\w+/g) || [];
     const cleanTags = hashtagsMatch.map(t => t.replace('#', '')).slice(0, 5);
 
+    // Extract a real CTA if present (lines containing "comment", "link", "dm", "bio", "click", "follow")
+    const ctaLine = lines.find(l => /comment|link|dm|bio|click|follow|sign up|subscribe|check out/i.test(l));
+
+    // Compute real engagement
+    const v = item.views || 1;
+    const eng = ((item.likes + item.comments) / v * 100).toFixed(1);
+
+    // Build a short title from first meaningful words
+    const titleWords = firstLine.replace(/[#@].*/g, '').trim().split(/\s+/).slice(0, 10).join(' ');
+
     return {
       id: idx + 1,
-      views: typeof item.views === 'number' ? item.views.toLocaleString() : String(item.views),
-      likes: typeof item.likes === 'number' ? item.likes.toLocaleString() : String(item.likes),
-      comments: typeof item.comments === 'number' ? item.comments.toLocaleString() : String(item.comments),
-      engagement: '9.5%',
-      hook: `"${firstLine.slice(0, 70)}..."`,
-      cta: `"Check bio or comment below to get the full link."`,
-      summary: `Real scraped Instagram reel from @${cleanUser}: ${item.caption.slice(0, 100)}...`,
-      hashtags: cleanTags.length > 0 ? cleanTags : [cleanUser, 'instagram', 'reels', 'growth', 'ai']
+      title: titleWords.length > 5 ? titleWords : `Reel ${idx + 1} by @${cleanUser}`,
+      hook: `"${firstLine.slice(0, 120)}"`,
+      caption: item.caption,
+      cta: ctaLine ? `"${ctaLine.trim().slice(0, 120)}"` : '"No explicit CTA found in this reel."',
+      views: item.views ? item.views.toLocaleString() : '—',
+      likes: item.likes ? item.likes.toLocaleString() : '—',
+      comments: item.comments ? item.comments.toLocaleString() : '—',
+      engagement: item.views > 0 ? `${eng}%` : '—',
+      summary: `Scraped reel from @${cleanUser}. ${lines.length > 3 ? 'Long-form caption strategy with detailed storytelling.' : 'Short punchy caption designed for quick engagement.'} ${hashtagsMatch.length > 0 ? `Uses ${hashtagsMatch.length} hashtags for discoverability.` : 'No hashtags used — relies on organic reach.'}`,
+      hashtags: cleanTags.length > 0 ? cleanTags : [cleanUser, 'instagram', 'reels', 'content', 'strategy']
     };
   });
 
