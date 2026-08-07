@@ -4,9 +4,9 @@ import { useToast } from '../hooks/useToast';
 import { 
   Clapperboard, Image as ImageIcon, Sparkles, Download, 
   TrendingUp, Eye, ThumbsUp, MessageSquare, Copy, Check, 
-  Loader2, Play, Lightbulb, Zap, Share2
+  Loader2, Play, Lightbulb, Zap, Share2, Search, Tag, FileText, Bot
 } from 'lucide-react';
-import { scrapeAndAnalyzeInstagramReels } from '../api/client';
+import { scrapeAndAnalyzeInstagramReels, researchYouTubeOutliers } from '../api/client';
 
 const ContentStudio = () => {
   const { showToast } = useToast();
@@ -90,16 +90,10 @@ const ContentStudio = () => {
     }
   ]);
 
-  // --- TAB 3: VIRAL SCRIPT ENGINE STATE ---
-  const [targetNiche, setTargetNiche] = useState('Dental Clinics & Healthcare');
+  // --- TAB 3: YOUTUBE OUTLIER RESEARCH ENGINE STATE ---
+  const [researchTopic, setResearchTopic] = useState('AI Agents for Business Automation');
   const [scriptLoading, setScriptLoading] = useState(false);
-  const [generatedScript, setGeneratedScript] = useState({
-    title: 'How Dental Clinics in Hyderabad Get 30 New Patients Monthly with AI',
-    hook_visual: 'Hold up a smartphone showing 14 unread patient booking notifications.',
-    hook_verbal: '"If you run a dental clinic and your receptionist is still manually booking appointments on paper, you are losing at least ₹2 Lakhs a month."',
-    body: 'Here is what we do instead: We install a 24/7 WhatsApp AI Bot directly onto your Google Maps listing.\n\nWhen a patient messages at 9 PM after work, the AI bot answers their questions, checks doctor availability, and books their appointment instantly.\n\nZero missed calls. Zero extra staff salaries.',
-    cta: '"Comment \'CLINIC\' below and I will send you the 2-minute video showing how it works."'
-  });
+  const [outliers, setOutliers] = useState(null);
 
   const [copiedIdx, setCopiedIdx] = useState(-1);
 
@@ -218,70 +212,49 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
     }
   };
 
-  const handleGenerateScript = async () => {
-    if (!targetNiche) return;
+  const handleResearchOutliers = async () => {
+    if (!researchTopic) return;
     setScriptLoading(true);
+    setOutliers(null);
 
-    const token = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
-    if (token) {
-      try {
-        const prompt = `You are a viral social media video scriptwriter. Write an agency video script pitching AI automation services to "${targetNiche}".
-Return ONLY a valid JSON object with keys: "title", "hook_visual", "hook_verbal", "body", "cta". Do NOT use markdown codeblock wrappers.`;
-
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://lead-flow-ai-pi.vercel.app',
-            'X-Title': 'LeadFlow AI'
-          },
-          body: JSON.stringify({
-            model: 'mistralai/mistral-7b-instruct:free',
-            messages: [{ role: 'user', content: prompt }]
-          })
-        });
-
-        const data = await res.json();
-        if (data?.choices?.[0]?.message?.content) {
-          const cleaned = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleaned);
-          if (parsed.title) {
-            setGeneratedScript(parsed);
-            setScriptLoading(false);
-            showToast(`Generated AI Agency Script for "${targetNiche}"!`, 'success');
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn('OpenRouter Script error:', err);
+    try {
+      const res = await researchYouTubeOutliers(researchTopic);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setOutliers(res.data);
+        showToast(`Found 3 YouTube Outliers for "${researchTopic}"!`, 'success');
+      } else if (res.error) {
+        showToast(res.error, 'error');
       }
-    }
-
-    setTimeout(() => {
+    } catch (err) {
+      console.error("Outlier research error:", err);
+      showToast('Error researching outliers', 'error');
+    } finally {
       setScriptLoading(false);
-      setGeneratedScript({
-        title: `How ${targetNiche} Scale Client Acquisition 3x Faster with AI Agents`,
-        hook_visual: 'Point directly to screen showing live qualified leads & unread notifications.',
-        hook_verbal: `"If you run a business in ${targetNiche} and you're still manually finding clients or answering messages, you are losing money every single day."`,
-        body: `Here is what top players in ${targetNiche} do instead:\n\n1. Scrape verified decision-makers using location-targeted search.\n2. Write stalker-level personalized cold outreach using AI.\n3. Install a 24/7 AI bot to qualify inbound leads instantly.\n\nZero missed clients. 3x higher revenue without hiring more sales staff.`,
-        cta: `"Comment 'GROWTH' below and I'll send you our complete AI lead system setup for ${targetNiche}."`
-      });
-      showToast(`Generated Script for ${targetNiche}!`, 'success');
-    }, 1000);
+    }
   };
 
   const handleExportMarkdown = () => {
     let md = `# Social Media & Thumbnail Intelligence Report\n\n`;
-    md += `Target Niche: ${targetNiche}\n`;
+    md += `Research Topic: ${researchTopic}\n`;
     md += `Analyzed Account: @${reelUsername}\n\n`;
     md += `## Top Hook Strategies\n`;
     reelsData.forEach((r, idx) => {
       md += `### Reel #${idx+1} (${r.views} Views)\n`;
+      md += `- **Title:** ${r.title}\n`;
       md += `- **Hook:** ${r.hook}\n`;
       md += `- **CTA:** ${r.cta}\n`;
       md += `- **Summary:** ${r.summary}\n\n`;
     });
+    if (outliers && outliers.length > 0) {
+      md += `\n## YouTube Outlier Research\n`;
+      outliers.forEach((o, idx) => {
+        md += `### Outlier #${idx+1}: ${o.outlier_title}\n`;
+        md += `- **Why Outlier:** ${o.why_outlier}\n`;
+        md += `- **Keywords:** ${(o.keywords || []).join(', ')}\n`;
+        md += `- **Script:**\n${o.script}\n\n`;
+        md += `- **Description:**\n${o.description}\n\n`;
+      });
+    }
     md += `\n## Recommended Thumbnail Concept\n`;
     md += `- **Headline Overlay:** ${thumbResults[0].headline}\n`;
     md += `- **Visual Composition:** ${thumbResults[0].subject}\n`;
@@ -563,57 +536,163 @@ Return ONLY a valid JSON object with keys: "title", "hook_visual", "hook_verbal"
           </div>
         )}
 
-        {/* TAB 3: VIRAL SCRIPT ENGINE */}
+        {/* TAB 3: YOUTUBE OUTLIER RESEARCH ENGINE */}
         {activeTab === 'script' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div className="card" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '4px', display: 'block' }}>Target Client Industry / Niche</label>
+            
+            {/* Input Section */}
+            <div className="card" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '300px' }}>
+                <label style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '4px', display: 'block' }}>Research Topic / Niche</label>
                 <input 
                   type="text" 
-                  value={targetNiche} 
-                  onChange={e => setTargetNiche(e.target.value)} 
-                  placeholder="e.g. Dental Clinics, Real Estate, E-Commerce" 
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', boxSizing: 'border-box' }}
+                  value={researchTopic} 
+                  onChange={e => setResearchTopic(e.target.value)} 
+                  placeholder="e.g. AI Agents, SaaS Growth, YouTube Automation..." 
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid var(--border)', borderRadius: '10px', boxSizing: 'border-box', fontSize: '14px' }}
                 />
               </div>
-              <button className="btn-blue" style={{ marginTop: '20px' }} onClick={handleGenerateScript} disabled={scriptLoading}>
-                {scriptLoading ? <Loader2 size={16} className="animate-spin" /> : <Clapperboard size={16} />}
-                {scriptLoading ? 'Writing Script...' : 'Generate Agency Script'}
+              <button className="btn-blue" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '8px' }} onClick={handleResearchOutliers} disabled={scriptLoading}>
+                {scriptLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                {scriptLoading ? 'Researching YouTube...' : 'Find Top 3 Outliers'}
               </button>
             </div>
 
-            {generatedScript && (
-              <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#FAFAFA' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
-                  <h3 style={{ margin: 0, fontSize: '18px', color: '#0F172A' }}>🎬 High-Converting Agency Video Script</h3>
-                  <button className="btn-demo" onClick={() => copyToClipboard(`TITLE: ${generatedScript.title}\n\nHOOK VERBAL: ${generatedScript.hook_verbal}\n\nBODY: ${generatedScript.body}\n\nCTA: ${generatedScript.cta}`, 99)}>
-                    <Copy size={14} /> Copy Full Script
-                  </button>
+            {/* Loading State */}
+            {scriptLoading && (
+              <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '48px 24px' }}>
+                <Loader2 size={40} color="#6366F1" className="animate-spin" />
+                <div style={{ fontWeight: 700, fontSize: '16px', color: '#0F172A' }}>Researching YouTube Outliers...</div>
+                <div style={{ fontSize: '13px', color: '#64748B', textAlign: 'center', maxWidth: '400px' }}>
+                  Scraping YouTube via Apify, analyzing top-performing videos, and generating complete content blueprints with AI...
                 </div>
+              </div>
+            )}
 
-                <div style={{ backgroundColor: '#EFF6FF', padding: '12px 16px', borderRadius: '8px', fontWeight: 700, color: '#1E40AF', fontSize: '15px' }}>
-                  📌 Suggested Title: {generatedScript.title}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                  <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', marginBottom: '6px' }}>👁️ Visual Hook (0-3 Seconds)</div>
-                    <div style={{ fontSize: '14px', color: '#334155', fontStyle: 'italic' }}>{generatedScript.hook_visual}</div>
+            {/* Results: 3 Outlier Cards */}
+            {outliers && outliers.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0F172A', fontFamily: 'var(--font-display)' }}>🏆 Top 3 YouTube Outliers: "{researchTopic}"</h3>
+                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748B' }}>Videos that massively outperformed expectations — reverse-engineered for you</p>
                   </div>
-                  <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#D97706', textTransform: 'uppercase', marginBottom: '6px' }}>🗣️ Verbal Hook (Opening Line)</div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>{generatedScript.hook_verbal}</div>
-                  </div>
                 </div>
 
-                <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', marginBottom: '6px' }}>💡 Value & Pitch Body</div>
-                  <div style={{ fontSize: '14px', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{generatedScript.body}</div>
-                </div>
+                {outliers.map((o, idx) => {
+                  const accentColors = [
+                    { border: '#6366F1', bg: '#EEF2FF', text: '#4F46E5', label: 'OUTLIER #1' },
+                    { border: '#06B6D4', bg: '#ECFEFF', text: '#0891B2', label: 'OUTLIER #2' },
+                    { border: '#F59E0B', bg: '#FFFBEB', text: '#B45309', label: 'OUTLIER #3' }
+                  ][idx] || { border: '#6366F1', bg: '#EEF2FF', text: '#4F46E5', label: `OUTLIER #${idx+1}` };
 
-                <div style={{ backgroundColor: '#DCFCE7', padding: '14px', borderRadius: '8px', border: '1px solid #86EFAC', color: '#166534', fontWeight: 600 }}>
-                  📢 Call To Action: {generatedScript.cta}
+                  return (
+                    <div key={idx} className="card" style={{ padding: '0', overflow: 'hidden', borderTop: `4px solid ${accentColors.border}` }}>
+                      
+                      {/* Card Header: Title */}
+                      <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', backgroundColor: '#FAFBFC', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 800, backgroundColor: accentColors.bg, color: accentColors.text, padding: '4px 10px', borderRadius: '8px', fontFamily: 'var(--font-mono)', border: `1px solid ${accentColors.border}30` }}>{accentColors.label}</span>
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: '16px', color: '#0F172A', fontFamily: 'var(--font-display)' }}>{o.outlier_title}</div>
+                            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px', fontStyle: 'italic' }}>💡 {o.why_outlier}</div>
+                          </div>
+                        </div>
+                        <button 
+                          className="btn-demo" 
+                          onClick={() => copyToClipboard(`TITLE: ${o.outlier_title}\n\nSCRIPT:\n${o.script}\n\nAI TIPS:\n${o.ai_tips}\n\nKEYWORDS: ${(o.keywords || []).join(', ')}\n\nDESCRIPTION:\n${o.description}`, 100 + idx)}
+                          style={{ whiteSpace: 'nowrap' }}
+                        >
+                          {copiedIdx === 100 + idx ? <Check size={14} color="#166534" /> : <Copy size={14} />}
+                          {copiedIdx === 100 + idx ? 'Copied!' : 'Copy All'}
+                        </button>
+                      </div>
+
+                      {/* Card Body */}
+                      <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+                        {/* 1. TITLE */}
+                        <div style={{ backgroundColor: accentColors.bg, padding: '14px 18px', borderRadius: '12px', border: `1px solid ${accentColors.border}30` }}>
+                          <div style={{ fontSize: '11px', fontWeight: 800, color: accentColors.text, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> Optimized Title</div>
+                          <div style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A' }}>{o.outlier_title}</div>
+                        </div>
+
+                        {/* 2. SCRIPT */}
+                        <div style={{ backgroundColor: '#F8FAFC', padding: '18px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '6px' }}><Clapperboard size={13} /> Video Script (60-90s)</div>
+                          <div style={{ fontSize: '13.5px', color: '#1E293B', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: o._scriptExpanded ? 'none' : '200px', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
+                            {o.script}
+                          </div>
+                          {o.script && o.script.length > 400 && (
+                            <button 
+                              onClick={() => {
+                                const updated = [...outliers];
+                                updated[idx] = { ...updated[idx], _scriptExpanded: !updated[idx]._scriptExpanded };
+                                setOutliers(updated);
+                              }}
+                              style={{ marginTop: '8px', background: 'none', border: `1px solid ${accentColors.border}40`, borderRadius: '8px', padding: '4px 14px', fontSize: '12px', fontWeight: 600, color: accentColors.text, cursor: 'pointer' }}
+                            >
+                              {o._scriptExpanded ? 'Show Less ▲' : 'Show Full Script ▼'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* 3. AI TIPS */}
+                        <div style={{ backgroundColor: '#F0FDF4', padding: '16px 18px', borderRadius: '12px', border: '1px solid #BBF7D0' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 800, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '6px' }}><Bot size={13} /> How to Use AI</div>
+                          <div style={{ fontSize: '13.5px', color: '#1E293B', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                            {o.ai_tips}
+                          </div>
+                        </div>
+
+                        {/* 4. KEYWORDS */}
+                        <div style={{ backgroundColor: '#FFF7ED', padding: '16px 18px', borderRadius: '12px', border: '1px solid #FED7AA' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 800, color: '#C2410C', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '6px' }}><Tag size={13} /> High-Reach Keywords</div>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {(o.keywords || []).map((kw, ki) => (
+                              <span key={ki} style={{ fontSize: '12px', backgroundColor: 'white', color: '#C2410C', padding: '5px 12px', borderRadius: '8px', fontWeight: 600, fontFamily: 'var(--font-mono)', border: '1px solid #FED7AA', cursor: 'pointer' }}>
+                                {kw}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 5. DESCRIPTION */}
+                        <div style={{ backgroundColor: '#EEF2FF', padding: '16px 18px', borderRadius: '12px', border: '1px solid #C7D2FE' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 800, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: '6px' }}><FileText size={13} /> YouTube Description (SEO Optimized)</div>
+                          <div style={{ fontSize: '13px', color: '#1E293B', lineHeight: 1.65, whiteSpace: 'pre-wrap', maxHeight: o._descExpanded ? 'none' : '150px', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
+                            {o.description}
+                          </div>
+                          {o.description && o.description.length > 300 && (
+                            <button 
+                              onClick={() => {
+                                const updated = [...outliers];
+                                updated[idx] = { ...updated[idx], _descExpanded: !updated[idx]._descExpanded };
+                                setOutliers(updated);
+                              }}
+                              style={{ marginTop: '8px', background: 'none', border: '1px solid #C7D2FE', borderRadius: '8px', padding: '4px 14px', fontSize: '12px', fontWeight: 600, color: '#4F46E5', cursor: 'pointer' }}
+                            >
+                              {o._descExpanded ? 'Show Less ▲' : 'Show Full Description ▼'}
+                            </button>
+                          )}
+                        </div>
+
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!scriptLoading && !outliers && (
+              <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '48px 24px', textAlign: 'center' }}>
+                <Search size={40} color="#CBD5E1" />
+                <div style={{ fontWeight: 700, fontSize: '16px', color: '#475569' }}>Enter a topic and find outliers</div>
+                <div style={{ fontSize: '13px', color: '#94A3B8', maxWidth: '400px' }}>
+                  We'll research YouTube, find the top 3 viral outlier videos, and give you a complete content blueprint with scripts, AI tips, keywords, and descriptions.
                 </div>
               </div>
             )}

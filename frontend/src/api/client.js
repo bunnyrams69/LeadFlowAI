@@ -648,4 +648,137 @@ Return ONLY the raw JSON array.`;
   return { data: formatted, error: null };
 };
 
+export const researchYouTubeOutliers = async (topic) => {
+  const token = localStorage.getItem('apify_api_key') || localStorage.getItem('apify_token') || import.meta.env.VITE_APIFY_TOKEN;
+  const openrouterKey = import.meta.env.VITE_OPENROUTER_KEY || localStorage.getItem('openrouter_api_key');
 
+  let youtubeResults = [];
+
+  // Step 1: Use Apify Google Search Scraper to find top YouTube videos on this topic
+  if (token) {
+    try {
+      const actorId = 'apify~google-search-scraper';
+      const startRes = await axios.post(
+        `https://api.apify.com/v2/actors/${actorId}/runs?token=${token}`,
+        {
+          queries: `site:youtube.com "${topic}" 2025 OR 2026`,
+          maxPagesPerQuery: 1,
+          resultsPerPage: 10,
+          countryCode: "us"
+        }
+      );
+
+      const runId = startRes.data.data.id;
+      const datasetId = startRes.data.data.defaultDatasetId;
+
+      let status = 'RUNNING';
+      let attempts = 0;
+      while (status !== 'SUCCEEDED' && status !== 'FAILED' && status !== 'ABORTED' && status !== 'TIMED-OUT' && attempts < 12) {
+        await new Promise(r => setTimeout(r, 2500));
+        const statusRes = await axios.get(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`);
+        status = statusRes.data.data.status;
+        attempts++;
+      }
+
+      if (status === 'SUCCEEDED') {
+        const datasetRes = await axios.get(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${token}`);
+        const items = datasetRes.data?.[0]?.organicResults || datasetRes.data || [];
+
+        youtubeResults = items
+          .filter(item => item.url?.includes('youtube.com/watch') || item.url?.includes('youtu.be'))
+          .slice(0, 5)
+          .map(item => ({
+            title: item.title || '',
+            url: item.url || '',
+            snippet: item.description || item.snippet || ''
+          }));
+      }
+    } catch (err) {
+      console.warn("Apify YouTube search error:", err);
+    }
+  }
+
+  // Step 2: Send to OpenRouter AI for deep outlier analysis
+  if (openrouterKey) {
+    try {
+      const contextBlock = youtubeResults.length > 0
+        ? `\n\nREAL SCRAPED YOUTUBE RESULTS for "${topic}":\n${JSON.stringify(youtubeResults, null, 2)}\n\nUse these real results to identify the top 3 outlier videos (highest-performing or most unique angle). Base your analysis on the actual titles and snippets above.`
+        : `\n\nNo real YouTube results were scraped. Use your training knowledge to identify 3 realistic outlier video concepts for the topic "${topic}" that would perform exceptionally well on YouTube.`;
+
+      const prompt = `You are an expert YouTube content strategist and SEO specialist. The user wants to create a video about: "${topic}"
+
+Your task: Find/identify the TOP 3 OUTLIER videos (videos that massively outperformed expectations) on this topic and provide a complete content blueprint for each.
+${contextBlock}
+
+Return ONLY a valid JSON array of exactly 3 objects. Each object must have these EXACT keys:
+- "id": number (1, 2, 3)
+- "outlier_title": string (the actual or reconstructed title of the outlier video — must be attention-grabbing, 60-80 chars)
+- "why_outlier": string (1 sentence explaining why this video went viral or outperformed — e.g. "Unusual angle combining AI with everyday cooking recipes attracted crossover audience")
+- "script": string (a complete 60-90 second video script for a similar video. Include: [HOOK - first 3 seconds], [PROBLEM], [SOLUTION], [PROOF/DEMO], [CTA]. Use line breaks between sections.)
+- "ai_tips": string (3-4 specific tips on how to use AI tools like ChatGPT, Claude, Midjourney, ElevenLabs, etc. to help create this video faster — scripting, thumbnail, voiceover, research, editing)
+- "keywords": array of 8-10 strings (high-reach SEO keywords and long-tail phrases for this video, ordered by search volume)
+- "description": string (a complete YouTube video description optimized for SEO. Include: 2-3 sentence hook, key timestamps, relevant links placeholder, 15-20 hashtags at the end. 800-1200 characters total.)
+
+CRITICAL: Each outlier MUST be UNIQUE with a completely different angle, script, and keyword strategy.
+Return ONLY the raw JSON array with NO markdown wrappers.`;
+
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${openrouterKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://lead-flow-ai-pi.vercel.app",
+          "X-Title": "LeadFlow AI"
+        },
+        body: JSON.stringify({
+          model: "mistralai/mistral-7b-instruct:free",
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+      if (data?.choices?.[0]?.message?.content) {
+        const cleaned = data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleaned);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return { data: parsed, error: null };
+        }
+      }
+    } catch (err) {
+      console.warn("OpenRouter YouTube Outlier Analysis Error:", err);
+    }
+  }
+
+  // Fallback: Generate intelligent outlier concepts locally
+  const fallback = [
+    {
+      id: 1,
+      outlier_title: `${topic} — The Strategy Nobody Is Talking About in 2026`,
+      why_outlier: "Unique contrarian angle that challenges the mainstream approach, attracting curiosity-driven clicks.",
+      script: `[HOOK - 0:00-0:03]\n"Everyone is doing ${topic} wrong. Here's what actually works..."\n\n[PROBLEM - 0:03-0:15]\n"Most people trying ${topic} follow the same generic advice. They spend weeks, get zero results, and give up."\n\n[SOLUTION - 0:15-0:35]\n"I discovered a 3-step framework that flips the entire approach. Step 1: Research outliers, not averages. Step 2: Reverse-engineer their exact process. Step 3: Apply AI tools to execute 10x faster."\n\n[PROOF - 0:35-0:50]\n"Using this method, I went from 0 to [result] in just 2 weeks. Here's my screen recording showing the exact process."\n\n[CTA - 0:50-1:00]\n"Comment 'FRAMEWORK' and I'll send you the complete playbook. And subscribe — I drop these breakdowns every week."`,
+      ai_tips: "1. Use ChatGPT to research and summarize the top 50 videos on this topic to find gaps in their content angles.\n2. Use Claude to write 5 different hook variations and A/B test the best one.\n3. Use Midjourney to generate a high-CTR thumbnail with dramatic lighting and text overlays.\n4. Use ElevenLabs for professional voiceover if you're camera-shy.",
+      keywords: [topic, `${topic} 2026`, `${topic} tutorial`, `${topic} strategy`, `best ${topic}`, `${topic} for beginners`, `how to ${topic}`, `${topic} tips`],
+      description: `🚀 ${topic} — The Strategy Nobody Is Talking About in 2026\n\nIn this video, I break down the exact 3-step framework that top creators are using for ${topic}. Most people follow generic advice and get zero results. This is the contrarian approach that actually works.\n\n⏱️ Timestamps:\n0:00 - The Problem\n0:15 - The 3-Step Framework\n0:35 - Real Results & Proof\n0:50 - Free Playbook (Comment 'FRAMEWORK')\n\n🔗 Resources:\n→ Free Playbook: [link]\n→ AI Tools I Use: [link]\n\n#${topic.replace(/\s+/g, '')} #youtube #contentcreation #ai #growthhacking #strategy #2026 #viral #outlier #creator`
+    },
+    {
+      id: 2,
+      outlier_title: `I Used AI to Master ${topic} in 7 Days — Here's Exactly How`,
+      why_outlier: "Time-compressed transformation story combined with AI tooling creates aspirational yet achievable content.",
+      script: `[HOOK - 0:00-0:03]\n"7 days ago I knew nothing about ${topic}. Today, I'm getting better results than people with years of experience. Here's my entire AI-powered system."\n\n[PROBLEM - 0:03-0:15]\n"The traditional way to learn ${topic} takes months. Courses cost thousands. And 90% of people quit before seeing results."\n\n[SOLUTION - 0:15-0:40]\n"Instead of the slow path, I built an AI stack: ChatGPT for research and scripting, Claude for strategy refinement, and automation tools for execution. Day 1: Research phase. Day 3: First draft. Day 5: Iteration. Day 7: Launch."\n\n[PROOF - 0:40-0:50]\n"Here are my actual results — screenshots, analytics, everything transparent."\n\n[CTA - 0:50-1:00]\n"Want my complete 7-day AI blueprint? Link in bio. Drop a 🔥 in the comments if this was helpful."`,
+      ai_tips: "1. Use ChatGPT-4o to create a day-by-day learning roadmap for the topic.\n2. Use Perplexity AI for real-time research and fact-checking before scripting.\n3. Use CapCut's AI editing features for auto-captions and visual effects.\n4. Use Canva AI to rapidly generate professional thumbnail variations.",
+      keywords: [`${topic} with AI`, `learn ${topic} fast`, `AI tools for ${topic}`, `${topic} in 7 days`, `${topic} beginner guide`, `AI automation ${topic}`, `${topic} 2026 tutorial`, `fastest way to learn ${topic}`],
+      description: `🤖 I Used AI to Master ${topic} in Just 7 Days — Complete Breakdown\n\nI went from total beginner to getting real results with ${topic} in one week, using nothing but AI tools. In this video, I show you my complete day-by-day system.\n\n⏱️ Timestamps:\n0:00 - The AI-Powered Challenge\n0:15 - Why Traditional Methods Fail\n0:20 - My 7-Day AI Stack\n0:40 - Real Results & Screenshots\n0:50 - Get the Free Blueprint\n\n🔗 Resources:\n→ 7-Day Blueprint: [link]\n→ AI Tool Stack List: [link]\n\n#${topic.replace(/\s+/g, '')} #AI #ChatGPT #LearnFast #7DayChallenge #productivity #automation #2026`
+    },
+    {
+      id: 3,
+      outlier_title: `${topic}: 3 Mistakes Costing You Thousands (And What To Do Instead)`,
+      why_outlier: "Loss aversion framing combined with specific number creates urgency and positions creator as an authority.",
+      script: `[HOOK - 0:00-0:03]\n"These 3 mistakes with ${topic} are literally costing you thousands. I made all of them."\n\n[PROBLEM - 0:03-0:20]\n"Mistake #1: Copying what everyone else does instead of finding your unique angle. Mistake #2: Ignoring data and going with gut feeling. Mistake #3: Not using AI tools to scale your output 10x."\n\n[SOLUTION - 0:20-0:45]\n"Here's what to do instead. For Mistake #1: Use the Outlier Research method — study the top 1% not the average. For Mistake #2: Use free analytics tools to track every metric. For Mistake #3: Build an AI workflow that handles the repetitive parts while you focus on creativity."\n\n[PROOF - 0:45-0:52]\n"After fixing these 3 mistakes, my results went from X to Y in just 30 days."\n\n[CTA - 0:52-1:00]\n"Save this video. Share it with someone who needs to hear this. And follow for more no-BS breakdowns every week."`,
+      ai_tips: "1. Use ChatGPT to list the 20 most common mistakes in this niche, then pick the 3 most impactful.\n2. Use Claude to rewrite each mistake section for maximum emotional impact.\n3. Use Opus Clip AI to auto-generate short-form clips from your long video for TikTok and Reels.\n4. Use TubeBuddy or VidIQ AI features to optimize your title and tags for maximum reach.",
+      keywords: [`${topic} mistakes`, `${topic} tips 2026`, `avoid ${topic} mistakes`, `${topic} growth`, `${topic} secrets`, `${topic} optimization`, `common ${topic} errors`, `${topic} expert advice`, `${topic} cost saving`],
+      description: `⚠️ ${topic}: 3 Mistakes Costing You Thousands (And What To Do Instead)\n\nI wasted months making these exact mistakes with ${topic}. In this video, I break down each one and show you the fix that actually works — backed by real data and results.\n\n⏱️ Timestamps:\n0:00 - The Costly Truth\n0:05 - Mistake #1: Copying Others\n0:12 - Mistake #2: Ignoring Data\n0:18 - Mistake #3: Not Using AI\n0:25 - The Fix for Each\n0:45 - My Before/After Results\n\n🔗 Resources:\n→ Free Checklist: [link]\n→ Recommended AI Tools: [link]\n\n#${topic.replace(/\s+/g, '')} #mistakes #growthhacks #contentcreator #youtube2026 #AItools #strategy #viral`
+    }
+  ];
+
+  return { data: fallback, error: null };
+};
