@@ -83,17 +83,17 @@ const ScraperLeadsTable = ({ leads, loading }) => {
 
   return (
     <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-      <table>
-        <thead style={{ backgroundColor: '#F9FAFB' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid var(--border)' }}>
           <tr>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Name</th>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Source (Verify)</th>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Email (Target)</th>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Score</th>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Location</th>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Company</th>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Role</th>
-            <th style={{ fontSize: '12px', color: '#6B7280', textTransform: 'uppercase' }}>Actions</th>
+            <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11px', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>NAME</th>
+            <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11px', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>SOURCE</th>
+            <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11px', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>EMAIL (TARGET)</th>
+            <th style={{ padding: '14px 20px', textAlign: 'center', fontSize: '11px', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>SCORE</th>
+            <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11px', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>LOCATION</th>
+            <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11px', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>COMPANY</th>
+            <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11px', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>ROLE</th>
+            <th style={{ padding: '14px 20px', textAlign: 'right', fontSize: '11px', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>ACTIONS</th>
           </tr>
         </thead>
         <tbody>
@@ -101,9 +101,9 @@ const ScraperLeadsTable = ({ leads, loading }) => {
             const score = calculateScore(lead);
             const sourceClass = (lead.source || 'linkedin').toLowerCase();
             return (
-              <tr key={i}>
-                <td style={{ fontWeight: 500 }}>{lead.name}</td>
-                <td>
+              <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '16px 20px', fontWeight: 700, fontSize: '14px', color: '#0F172A' }}>{lead.name}</td>
+                <td style={{ padding: '16px 20px' }}>
                   {lead.profile_url ? (
                     <a href={lead.profile_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }} title="Verify Profile on LinkedIn">
                       <span className={`tag tag-${sourceClass}`} style={{ cursor: 'pointer' }}>{lead.source} ↗</span>
@@ -112,17 +112,19 @@ const ScraperLeadsTable = ({ leads, loading }) => {
                     <span className={`tag tag-${sourceClass}`}>{lead.source}</span>
                   )}
                 </td>
-                <td>
-                  <span style={{ fontSize: '13px', color: '#2563EB', fontWeight: 500, fontFamily: 'monospace' }}>
-                    {lead.email || `${lead.name.split(' ')[0].toLowerCase()}@company.com`}
-                  </span>
+                <td style={{ padding: '16px 20px', fontFamily: 'var(--font-mono)', fontSize: '13px', color: '#2563EB', fontWeight: 500 }}>
+                  {lead.email || `${lead.name.split(' ')[0].toLowerCase()}@company.com`}
                 </td>
-                <td>{renderScoreBadge(score)}</td>
-                <td style={{ fontSize: '13px', color: '#4B5563' }}>{lead.location || 'Hyderabad'}</td>
-                <td>{lead.company}</td>
-                <td style={{ color: '#6B7280' }}>{lead.title}</td>
-                <td>
-                  <button className="btn-blue" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => navigate('/email', { state: { lead } })}>
+                <td style={{ padding: '16px 20px', textAlign: 'center' }}>{renderScoreBadge(score)}</td>
+                <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B' }}>{lead.location || 'Hyderabad'}</td>
+                <td style={{ padding: '16px 20px', fontSize: '13px', color: '#0F172A', fontWeight: 600 }}>{lead.company}</td>
+                <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748B' }}>{lead.title}</td>
+                <td style={{ padding: '16px 20px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <button 
+                    className="btn-blue" 
+                    style={{ fontSize: '12px', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }} 
+                    onClick={() => navigate('/email', { state: { lead } })}
+                  >
                     <Mail size={14} /> Write Email
                   </button>
                 </td>
