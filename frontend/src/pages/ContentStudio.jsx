@@ -196,10 +196,12 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
   };
 
   const handleSendToThumbnail = (title) => {
-    setActiveTab('thumbnail');
     setThumbIdea(title);
+    setActiveTab('thumbnail');
     showToast(`Generating Thumbnail Concepts for: "${title.slice(0, 30)}..."`, 'info');
-    handleGenerateThumbnails(title);
+    setTimeout(() => {
+      handleGenerateThumbnails(title);
+    }, 100);
   };
 
   const handleAnalyzeReels = async () => {
@@ -232,6 +234,9 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
       const res = await researchYouTubeOutliers(researchTopic);
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
         setOutliers(res.data);
+        if (res.data[0]?.outlier_title) {
+          setThumbIdea(res.data[0].outlier_title);
+        }
         showToast(`Found 3 YouTube Outliers for "${researchTopic}"!`, 'success');
       } else if (res.error) {
         showToast(res.error, 'error');
@@ -349,6 +354,41 @@ Return ONLY a valid JSON array of 3 objects with keys: "id" (e.g. "CONCEPT #1"),
               <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={20} color="#2563EB" /> High-CTR Thumbnail Concept Engine
               </h3>
+
+              {/* QUICK FILL FROM YOUTUBE OUTLIERS */}
+              {outliers && outliers.length > 0 && (
+                <div style={{ backgroundColor: '#EEF2FF', padding: '12px 16px', borderRadius: '10px', border: '1px solid #C7D2FE', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-mono)' }}>
+                    <Sparkles size={13} /> Quick Fill from YouTube Outliers ({researchTopic}):
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {outliers.map((o, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setThumbIdea(o.outlier_title);
+                          handleGenerateThumbnails(o.outlier_title);
+                        }}
+                        style={{
+                          fontSize: '12px',
+                          backgroundColor: thumbIdea === o.outlier_title ? '#4F46E5' : 'white',
+                          color: thumbIdea === o.outlier_title ? 'white' : '#1E293B',
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid #C7D2FE',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        Outlier #{idx+1}: {o.outlier_title.slice(0, 45)}...
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 2, minWidth: '280px' }}>
                   <label style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '4px', display: 'block' }}>Video Topic / Core Offer</label>
