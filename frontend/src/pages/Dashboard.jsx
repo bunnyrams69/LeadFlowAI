@@ -33,7 +33,9 @@ const Dashboard = () => {
     let combined = [];
     const li = JSON.parse(localStorage.getItem('linkedin_leads') || '[]');
     const ig = JSON.parse(localStorage.getItem('insta_leads') || '[]');
-    combined = [...li, ...ig];
+    const fb = JSON.parse(localStorage.getItem('fb_leads') || '[]');
+    const th = JSON.parse(localStorage.getItem('threads_leads') || '[]');
+    combined = [...li, ...ig, ...fb, ...th];
     setAllLeads(combined);
     setLoading(false);
   };

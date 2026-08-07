@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import LinkedInScraper from './pages/LinkedInScraper';
 import InstaScraper from './pages/InstaScraper';
+import FacebookScraper from './pages/FacebookScraper';
+import ThreadsScraper from './pages/ThreadsScraper';
 import EmailWriter from './pages/EmailWriter';
 import PostAutomation from './pages/PostAutomation';
 import RagChatbot from './pages/RagChatbot';
@@ -38,6 +40,8 @@ function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/linkedin" element={<LinkedInScraper />} />
                   <Route path="/instagram" element={<InstaScraper />} />
+                  <Route path="/facebook" element={<FacebookScraper />} />
+                  <Route path="/threads" element={<ThreadsScraper />} />
                   <Route path="/email" element={<EmailWriter />} />
                   <Route path="/post" element={<PostAutomation />} />
                   <Route path="/studio" element={<ContentStudio />} />
