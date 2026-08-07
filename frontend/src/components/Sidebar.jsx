@@ -58,8 +58,8 @@ const Sidebar = () => {
   );
 
   return (
-    <div style={{ width: '230px', background: 'linear-gradient(180deg, #0B0F19 0%, #111827 100%)', color: 'white', display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ width: '230px', height: '100vh', flexShrink: 0, background: 'linear-gradient(180deg, #0B0F19 0%, #111827 100%)', color: 'white', display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
         <div style={{ fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(245,158,11,0.3)' }}>
             <Zap size={20} color="#FFFFFF" />
@@ -69,7 +69,7 @@ const Sidebar = () => {
         <div style={{ fontSize: '11px', color: '#64748B', marginTop: '6px', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>by Cognify AI • Hyderabad</div>
       </div>
       
-      <div style={{ flex: 1, padding: '16px 0' }}>
+      <div className="custom-sidebar-scroll" style={{ flex: 1, padding: '16px 0', overflowY: 'auto', overflowX: 'hidden' }}>
         {navItems.map(renderNavItems)}
         <div style={{ height: '1px', backgroundColor: 'rgba(255,255,255,0.06)', margin: '0 20px 20px' }}></div>
         {aiItems.map(renderNavItems)}
