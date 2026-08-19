@@ -44,7 +44,8 @@ const Dashboard = () => {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setAllLeads(parsed);
+          const normalized = parsed.map((l, i) => normalizeLead(l, i));
+          setAllLeads(normalized);
           return;
         }
       } catch (e) {
@@ -53,6 +54,41 @@ const Dashboard = () => {
     }
     // Fallback initialize with high-converting sample if empty
     runInitialFallback();
+  };
+
+  const normalizeLead = (l, i) => {
+    const cleanName = l?.name || `Business #${i + 1}`;
+    const slug = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const demoUrl = l?.demoUrl || `https://leadflow-demo.tunnel.leadflow.ai/preview/${slug}`;
+    const tier = l?.tier || (l?.score >= 70 ? 'HOT' : l?.score >= 45 ? 'WARM' : 'LOW');
+    return {
+      id: l?.id || i + 1,
+      name: cleanName,
+      category: l?.category || 'Real Estate',
+      city: l?.city || 'Vadodara',
+      phone: l?.phone || `+91 98${Math.floor(10000000 + i * 123456)}`,
+      email: l?.email || `contact@${slug}.com`,
+      website: l?.website || '',
+      websiteStatus: l?.websiteStatus || (l?.hasWebsite ? 'Active Modern' : 'No Website'),
+      score: l?.score || 75,
+      tier: tier,
+      tierBadge: l?.tierBadge || (tier === 'HOT' ? '🔥 HOT' : tier === 'WARM' ? '⚡ WARM' : '❄️ LOW'),
+      tierColor: l?.tierColor || (tier === 'HOT' ? '#DC2626' : tier === 'WARM' ? '#D97706' : '#64748B'),
+      tierBg: l?.tierBg || (tier === 'HOT' ? '#FEE2E2' : tier === 'WARM' ? '#FEF3C7' : '#F1F5F9'),
+      reviews: l?.reviews || 24,
+      rating: l?.rating || '4.8',
+      demoUrl: demoUrl,
+      demoHeadline: l?.demoHeadline || `Modernize ${cleanName} with 24/7 AI Lead Automation`,
+      demoSubheadline: l?.demoSubheadline || `Never miss a client in ${l?.city || 'your city'}. 24/7 AI captures leads and books appointments.`,
+      emailSubject: l?.emailSubject || `${cleanName.split(' ')[0]} - quick question regarding ${cleanName}`,
+      emailBody: l?.emailBody || `Hey ${cleanName.split(' ')[0]},\n\nI built a free live demo for ${cleanName}:\n👉 ${demoUrl}`,
+      whatsappMsg: l?.whatsappMsg || `Hi ${cleanName} team! 👋 Check your live demo here: ${demoUrl}`,
+      followups: l?.followups || {},
+      currentFollowupDay: l?.currentFollowupDay || 0,
+      approvalStatus: l?.approvalStatus || (tier === 'HOT' ? 'pending' : 'approved'),
+      outreachStatus: l?.outreachStatus || 'Not Sent',
+      source: l?.source || 'Google Maps / SerpAPI'
+    };
   };
 
   const runInitialFallback = async () => {
@@ -190,17 +226,17 @@ const Dashboard = () => {
     const headers = ['ID', 'Business Name', 'Category', 'City', 'Phone', 'Email', 'Score', 'Tier', 'Website Status', 'Demo Link', 'Approval Status', 'Outreach Status'];
     const rows = allLeads.map(l => [
       l.id,
-      `"${l.name}"`,
-      `"${l.category}"`,
-      `"${l.city}"`,
-      `"${l.phone}"`,
-      `"${l.email}"`,
-      l.score,
-      l.tier,
-      `"${l.websiteStatus}"`,
-      `"${l.demoUrl}"`,
-      l.approvalStatus,
-      `"${l.outreachStatus}"`
+      `"${l.name || ''}"`,
+      `"${l.category || ''}"`,
+      `"${l.city || ''}"`,
+      `"${l.phone || ''}"`,
+      `"${l.email || ''}"`,
+      l.score || 0,
+      l.tier || 'LOW',
+      `"${l.websiteStatus || ''}"`,
+      `"${l.demoUrl || ''}"`,
+      l.approvalStatus || 'approved',
+      `"${l.outreachStatus || ''}"`
     ]);
     const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -212,15 +248,17 @@ const Dashboard = () => {
     showToast('Exported CRM leads to CSV!', 'success');
   };
 
-  // Metrics computation
-  const totalLeads = allLeads.length;
-  const hotLeads = allLeads.filter(l => l.tier === 'HOT').length;
-  const warmLeads = allLeads.filter(l => l.tier === 'WARM').length;
-  const pendingApproval = allLeads.filter(l => l.approvalStatus === 'pending').length;
-  const sentOutreach = allLeads.filter(l => l.outreachStatus.includes('Sent')).length;
+  // Metrics computation with safe null checks
+  const safeLeads = Array.isArray(allLeads) ? allLeads : [];
+  const totalLeads = safeLeads.length;
+  const hotLeads = safeLeads.filter(l => l?.tier === 'HOT').length;
+  const warmLeads = safeLeads.filter(l => l?.tier === 'WARM').length;
+  const pendingApproval = safeLeads.filter(l => l?.approvalStatus === 'pending').length;
+  const sentOutreach = safeLeads.filter(l => (l?.outreachStatus || '').includes('Sent')).length;
 
   // Filtered Leads
-  const filteredLeads = allLeads.filter(lead => {
+  const filteredLeads = safeLeads.filter(lead => {
+    if (!lead) return false;
     if (activeFilter === 'hot') return lead.tier === 'HOT';
     if (activeFilter === 'warm') return lead.tier === 'WARM';
     if (activeFilter === 'low') return lead.tier === 'LOW';
@@ -683,10 +721,10 @@ const Dashboard = () => {
                       <td style={{ padding: '10px 14px', color: '#0284C7', textDecoration: 'underline', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {l.demoUrl}
                       </td>
-                      <td style={{ padding: '10px 14px', color: l.outreachStatus.includes('Sent') ? '#166534' : '#64748B' }}>
-                        {l.outreachStatus}
+                      <td style={{ padding: '10px 14px', color: (l?.outreachStatus || '').includes('Sent') ? '#166534' : '#64748B' }}>
+                        {l?.outreachStatus || 'Not Sent'}
                       </td>
-                      <td style={{ padding: '10px 14px', color: '#64748B' }}>Day {l.currentFollowupDay || 0}</td>
+                      <td style={{ padding: '10px 14px', color: '#64748B' }}>Day {l?.currentFollowupDay || 0}</td>
                     </tr>
                   ))}
                 </tbody>
