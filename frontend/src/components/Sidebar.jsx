@@ -7,7 +7,7 @@ const Sidebar = () => {
 
   const navItems = [
     { section: 'MODULES', items: [
-      { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/dashboard', label: 'LeadHunter Pipeline', icon: LayoutDashboard },
       { path: '/linkedin', label: 'LinkedIn Scraper', icon: Briefcase },
       { path: '/instagram', label: 'Instagram Scraper', icon: Camera },
       { path: '/facebook', label: 'Facebook Leads', icon: Users },
