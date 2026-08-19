@@ -28,8 +28,9 @@ body {
   font-family: var(--font-body);
   background-color: var(--bg-gray);
   color: #0F172A;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

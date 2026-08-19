@@ -24,17 +24,17 @@ const AppLayout = ({ children }) => {
 
   if (isPublicPreview) {
     return (
-      <div style={{ minHeight: '100vh', width: '100vw', backgroundColor: '#F8FAFC' }}>
+      <div style={{ minHeight: '100vh', width: '100%', backgroundColor: '#F8FAFC', overflowY: 'auto' }}>
         {children}
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw' }}>
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-gray)' }}>
-        <div key={location.pathname} className="page-transition" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-gray)', overflowY: 'auto' }}>
+        <div key={location.pathname} className="page-transition" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {children}
         </div>
       </div>
