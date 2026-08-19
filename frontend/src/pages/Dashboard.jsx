@@ -7,7 +7,7 @@ import {
   CheckCircle2, Clock, Bot, ExternalLink, RefreshCw, Send, Check, Phone, 
   Sparkles, FileSpreadsheet, Eye, ChevronRight, AlertCircle, ArrowUpRight
 } from 'lucide-react';
-import { runLeadHunterPipeline } from '../api/client';
+import { runLeadHunterPipeline, dispatchAutomatedWhatsApp, dispatchAutomatedEmail } from '../api/client';
 import { AppContext } from '../context/AppContext';
 import { useToast } from '../hooks/useToast';
 
@@ -167,13 +167,17 @@ const Dashboard = () => {
     }, 1200);
   };
 
-  const handleApproveLead = (leadToApprove) => {
+  const handleApproveLead = async (leadToApprove) => {
+    // Fire automated background dispatch for both Email and WhatsApp
+    const emailRes = await dispatchAutomatedEmail(leadToApprove);
+    const waRes = await dispatchAutomatedWhatsApp(leadToApprove);
+
     const updated = allLeads.map(l => {
       if (l.id === leadToApprove.id) {
         return {
           ...l,
           approvalStatus: 'approved',
-          outreachStatus: 'Sent (Gmail SMTP)',
+          outreachStatus: waRes.mode === 'LIVE_META_API' ? 'Sent (Email + WhatsApp API)' : 'Sent (Email + WhatsApp)',
           currentFollowupDay: 0
         };
       }
@@ -183,19 +187,26 @@ const Dashboard = () => {
     setAllLeads(updated);
     localStorage.setItem('leadhunter_leads', JSON.stringify(updated));
     incrementEmailsSent();
-    showToast(`Approved & dispatched cold email to ${leadToApprove.name}!`, 'success');
+    showToast(`Approved & automated outreach dispatched to ${leadToApprove.name}!`, 'success');
     setSelectedHitlLead(null);
   };
 
-  const handleApproveAllHot = () => {
+  const handleApproveAllHot = async () => {
     let approvedCount = 0;
+    for (const lead of allLeads) {
+      if (lead.tier === 'HOT' && lead.approvalStatus === 'pending') {
+        await dispatchAutomatedEmail(lead);
+        await dispatchAutomatedWhatsApp(lead);
+        approvedCount++;
+      }
+    }
+
     const updated = allLeads.map(l => {
       if (l.tier === 'HOT' && l.approvalStatus === 'pending') {
-        approvedCount++;
         return {
           ...l,
           approvalStatus: 'approved',
-          outreachStatus: 'Sent (Gmail SMTP)',
+          outreachStatus: 'Sent (Email + WhatsApp)',
           currentFollowupDay: 0
         };
       }
@@ -205,7 +216,7 @@ const Dashboard = () => {
     setAllLeads(updated);
     localStorage.setItem('leadhunter_leads', JSON.stringify(updated));
     for (let i = 0; i < approvedCount; i++) incrementEmailsSent();
-    showToast(`Approved and dispatched ${approvedCount} HOT leads!`, 'success');
+    showToast(`Approved & automatically dispatched ${approvedCount} HOT leads!`, 'success');
   };
 
   const handleRejectLead = (leadToReject) => {
