@@ -109,10 +109,27 @@ const DemoPreviewModal = ({ lead, onClose, onApprove }) => {
               <span>{lead.demoUrl || `https://leadflow-demo.tunnel.leadflow.ai/preview/${lead.name.toLowerCase().replace(/\s+/g, '-')}`}</span>
             </div>
 
+            {/* Open in New Window Button */}
+            <a
+              href={lead.demoUrl || `/preview/${(lead.name || 'demo').toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+              title="Open full interactive page in new tab"
+            >
+              <button
+                type="button"
+                className="btn-demo"
+                style={{ padding: '4px 10px', fontSize: '11px', height: '28px', backgroundColor: '#4F46E5', color: '#FFFFFF', border: 'none', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+              >
+                <ExternalLink size={12} /> Open Full Page
+              </button>
+            </a>
+
             <button
               onClick={handleCopy}
               className="btn-demo"
-              style={{ padding: '4px 10px', fontSize: '11px', height: '28px', backgroundColor: '#334155', color: '#E2E8F0', border: 'none' }}
+              style={{ padding: '4px 10px', fontSize: '11px', height: '28px', backgroundColor: '#334155', color: '#E2E8F0', border: 'none', cursor: 'pointer' }}
               title="Copy Public Demo Link"
             >
               {copied ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
