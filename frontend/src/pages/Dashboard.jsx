@@ -648,23 +648,53 @@ const Dashboard = () => {
                         </button>
                       </td>
 
-                      {/* Human Approval Action Column */}
+                      {/* Human Approval & Instant Send Column */}
                       <td style={{ padding: '16px 20px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        {lead.approvalStatus === 'pending' ? (
-                          <button
-                            onClick={() => setSelectedHitlLead(lead)}
-                            className="btn-blue"
-                            style={{ backgroundColor: '#E11D48', padding: '6px 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          {/* 1-Click Direct WhatsApp (wa.me) */}
+                          <a
+                            href={`https://wa.me/91${(lead.phone || '').replace(/[^0-9]/g, '').slice(-10)}?text=${encodeURIComponent(lead.whatsappMsg || 'Hi! Check your live demo prototype.')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ textDecoration: 'none' }}
+                            title="1-Click Send via WhatsApp Web/App"
                           >
-                            <ShieldAlert size={14} /> Review & Approve
-                          </button>
-                        ) : lead.approvalStatus === 'approved' ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#15803D', fontWeight: 700, fontSize: '12.5px', backgroundColor: '#DCFCE7', padding: '4px 10px', borderRadius: '8px' }}>
-                            <CheckCircle2 size={14} /> Approved & Sent
-                          </span>
-                        ) : (
-                          <span style={{ color: '#94A3B8', fontSize: '12px', fontWeight: 600 }}>Rejected</span>
-                        )}
+                            <button
+                              type="button"
+                              style={{
+                                backgroundColor: '#22C55E',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '6px 10px',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <Phone size={13} /> WA
+                            </button>
+                          </a>
+
+                          {lead.approvalStatus === 'pending' ? (
+                            <button
+                              onClick={() => setSelectedHitlLead(lead)}
+                              className="btn-blue"
+                              style={{ backgroundColor: '#E11D48', padding: '6px 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                            >
+                              <ShieldAlert size={14} /> Review & Approve
+                            </button>
+                          ) : lead.approvalStatus === 'approved' ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#15803D', fontWeight: 700, fontSize: '12.5px', backgroundColor: '#DCFCE7', padding: '4px 10px', borderRadius: '8px' }}>
+                              <CheckCircle2 size={14} /> Approved
+                            </span>
+                          ) : (
+                            <span style={{ color: '#94A3B8', fontSize: '12px', fontWeight: 600 }}>{lead.approvalStatus || 'Rejected'}</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
