@@ -12,16 +12,32 @@ import RagChatbot from './pages/RagChatbot';
 import ContentStudio from './pages/ContentStudio';
 import ConversionAnalytics from './pages/ConversionAnalytics';
 import HackathonFaq from './pages/HackathonFaq';
+import ClientDemoPage from './pages/ClientDemoPage';
 import { AppProvider } from './context/AppContext';
 import { ToastProvider } from './hooks/useToast';
 import Toast from './components/Toast';
 import GlobalProgressBar from './components/GlobalProgressBar';
 
-const PageTransition = ({ children }) => {
+const AppLayout = ({ children }) => {
   const location = useLocation();
+  const isPublicPreview = location.pathname.startsWith('/preview/') || location.pathname.startsWith('/demo/');
+
+  if (isPublicPreview) {
+    return (
+      <div style={{ minHeight: '100vh', width: '100vw', backgroundColor: '#F8FAFC' }}>
+        {children}
+      </div>
+    );
+  }
+
   return (
-    <div key={location.pathname} className="page-transition" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-      {children}
+    <div style={{ display: 'flex', height: '100vh', width: '100vw' }}>
+      <Sidebar />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-gray)' }}>
+        <div key={location.pathname} className="page-transition" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          {children}
+        </div>
+      </div>
     </div>
   );
 };
@@ -32,27 +48,26 @@ function App() {
       <AppProvider>
         <Router>
           <GlobalProgressBar />
-          <div style={{ display: 'flex', height: '100vh', width: '100vw' }}>
-            <Sidebar />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-gray)' }}>
-              <PageTransition>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/dashboard" />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/linkedin" element={<LinkedInScraper />} />
-                  <Route path="/instagram" element={<InstaScraper />} />
-                  <Route path="/facebook" element={<FacebookScraper />} />
-                  <Route path="/threads" element={<ThreadsScraper />} />
-                  <Route path="/email" element={<EmailWriter />} />
-                  <Route path="/post" element={<PostAutomation />} />
-                  <Route path="/studio" element={<ContentStudio />} />
-                  <Route path="/analytics" element={<ConversionAnalytics />} />
-                  <Route path="/chat" element={<RagChatbot />} />
-                  <Route path="/faq" element={<HackathonFaq />} />
-                </Routes>
-              </PageTransition>
-            </div>
-          </div>
+          <AppLayout>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/linkedin" element={<LinkedInScraper />} />
+              <Route path="/instagram" element={<InstaScraper />} />
+              <Route path="/facebook" element={<FacebookScraper />} />
+              <Route path="/threads" element={<ThreadsScraper />} />
+              <Route path="/email" element={<EmailWriter />} />
+              <Route path="/post" element={<PostAutomation />} />
+              <Route path="/studio" element={<ContentStudio />} />
+              <Route path="/analytics" element={<ConversionAnalytics />} />
+              <Route path="/chat" element={<RagChatbot />} />
+              <Route path="/faq" element={<HackathonFaq />} />
+              
+              {/* Public Live Client Demo Routes (Works on any phone/device!) */}
+              <Route path="/preview/:slug" element={<ClientDemoPage />} />
+              <Route path="/demo/:slug" element={<ClientDemoPage />} />
+            </Routes>
+          </AppLayout>
         </Router>
         <Toast />
       </AppProvider>
@@ -61,3 +76,4 @@ function App() {
 }
 
 export default App;
+

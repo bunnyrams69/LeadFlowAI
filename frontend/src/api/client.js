@@ -1216,8 +1216,9 @@ export const runLeadHunterPipeline = async (city = 'Vadodara', category = 'Real 
       tierBg = '#FEF3C7';
     }
 
-    // Public Tunnel Demo Page URL simulation
-    const demoUrl = `https://leadflow-demo.tunnel.leadflow.ai/preview/${slug}`;
+    // Public Live Demo Page URL (Works directly on mobile & desktop!)
+    const baseUrl = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'https://lead-flow-ai-pi.vercel.app';
+    const demoUrl = `${baseUrl}/preview/${slug}?city=${encodeURIComponent(city)}&category=${encodeURIComponent(category)}&phone=${encodeURIComponent(b.phone || '')}`;
     const firstName = cleanName.split(' ')[0];
 
     // Stage 4: Multi-Channel Outreach Content (Cold Email + WhatsApp Pitch)

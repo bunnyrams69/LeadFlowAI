@@ -59,7 +59,8 @@ const Dashboard = () => {
   const normalizeLead = (l, i) => {
     const cleanName = l?.name || `Business #${i + 1}`;
     const slug = cleanName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    const demoUrl = l?.demoUrl || `https://leadflow-demo.tunnel.leadflow.ai/preview/${slug}`;
+    const baseUrl = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'https://lead-flow-ai-pi.vercel.app';
+    const demoUrl = (l?.demoUrl && !l.demoUrl.includes('tunnel.leadflow.ai')) ? l.demoUrl : `${baseUrl}/preview/${slug}?city=${encodeURIComponent(l?.city || 'Vadodara')}&category=${encodeURIComponent(l?.category || 'Real Estate')}&phone=${encodeURIComponent(l?.phone || '')}`;
     const tier = l?.tier || (l?.score >= 70 ? 'HOT' : l?.score >= 45 ? 'WARM' : 'LOW');
     return {
       id: l?.id || i + 1,
